@@ -11,7 +11,7 @@ Intention of this project is to connect "old" ModBus electrical meters to usable
 # Prototype 1:
 
 Test Board with TTGO Lora and DSM 610
-<img src="img/ModBusGatewayProto1.jpg">
+<img src="Img/ModBusGatewayProto1.jpg">
 
 # Hardware
 
