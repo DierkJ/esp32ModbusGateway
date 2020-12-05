@@ -24,15 +24,26 @@ static const char TAG[] = __FILE__;
 
 #include "main.h"
 #include "display.h"
+#include "mbhttpsserver.h"
 
 #define NTP_SERVER "de.pool.ntp.org"
 #define TZ_INFO "WEST-1DWEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00" // Western European Time
 
 SemaphoreHandle_t I2Caccess;
 
+//flag for saving data
+bool shouldSaveConfig = false;
+
+//callback notifying us of the need to save config
+void saveConfigCallback () 
+{
+  ESP_LOGI(TAG, "Should save config");
+  shouldSaveConfig = true;
+}
+
+
 void setup() 
 {
-
   // create some semaphores for syncing / mutexing tasks
   I2Caccess = xSemaphoreCreateMutex(); // for access management of i2c bus
   assert(I2Caccess != NULL);
@@ -42,6 +53,7 @@ void setup()
   // Set WiFi to station mode and disconnect from an AP if it was previously connected
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
+
   Serial.begin(115200);
 
   esp_log_level_set("*", ESP_LOG_INFO);
@@ -72,15 +84,19 @@ void setup()
 
   dp_init(true);
 
-ESP_LOGI(TAG, "Display init");
+  ESP_LOGI(TAG, "Display init");
 
   //WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
   WiFiManager wm;
-  bool res;
-  // res = wm.autoConnect(); // auto generated AP name from chipid
-  res = wm.autoConnect("Hahis ModbusGW"); // anonymous ap
-  //res = wm.autoConnect("AutoConnectAP","password"); // password protected ap
 
+  // wm.resetSettings();
+
+  //set config save notify callback
+  wm.setSaveConfigCallback(saveConfigCallback);
+  
+  bool res;
+  res = wm.autoConnect("Hahis ModbusGW"); // anonymous ap
+ 
   if(!res) 
   {
         ESP_LOGI(TAG, "Failed to connect");
@@ -91,6 +107,7 @@ ESP_LOGI(TAG, "Display init");
         //if you get here you have connected to the WiFi    
         ESP_LOGI(TAG, "connected...yeey :)");
     
+        WiFi.persistent(true);  
         String sIP = WiFi.localIP().toString();
         const char *pS = sIP.c_str();
         ESP_LOGI(TAG, "IP-Adress: %s", pS);
@@ -103,12 +120,15 @@ ESP_LOGI(TAG, "Display init");
         ESP_LOGI(TAG, "Time: %2.2d:%2.2d:%2.2d", local.tm_hour, local.tm_min, local.tm_sec);
         dp_printf(0, 6, FONT_SMALL, 0, "Time: %2.2d:%2.2d:%2.2d", local.tm_hour, local.tm_min, local.tm_sec);
         dp_dump(displaybuf);
+
+        StartHTTP();
     }
 }
 
 void loop() 
 {
   //  super simple loop
+
   struct tm local;
   getLocalTime(&local, 10000); 
 

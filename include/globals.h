@@ -52,9 +52,9 @@ typedef struct {
   uint8_t countermode; // 0=cyclic unconfirmed, 1=cumulative, 2=cyclic confirmed
   int16_t rssilimit;   // threshold for rssilimiter, negative value!
   uint8_t sendcycle;   // payload send cycle [seconds/2]
-  uint8_t runmode;       // 0=normal, 1=update
-  uint8_t payloadmask;   // bitswitches for payload data
-  char version[10];      // Firmware version
+  uint8_t runmode;     // 0=normal, 1=update
+  uint8_t payloadmask; // bitswitches for payload data
+  char version[10];    // Firmware version
 } configData_t;
 
 extern SemaphoreHandle_t I2Caccess;
