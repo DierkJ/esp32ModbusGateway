@@ -107,7 +107,6 @@ void setup()
         //if you get here you have connected to the WiFi    
         ESP_LOGI(TAG, "connected...yeey :)");
     
-        WiFi.persistent(true);  
         String sIP = WiFi.localIP().toString();
         const char *pS = sIP.c_str();
         ESP_LOGI(TAG, "IP-Adress: %s", pS);
@@ -121,9 +120,11 @@ void setup()
         dp_printf(0, 6, FONT_SMALL, 0, "Time: %2.2d:%2.2d:%2.2d", local.tm_hour, local.tm_min, local.tm_sec);
         dp_dump(displaybuf);
 
+        delay(1000);
         StartHTTP();
     }
 }
+
 
 void loop() 
 {
