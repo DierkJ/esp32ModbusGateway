@@ -24,7 +24,7 @@ static const char TAG[] = __FILE__;
 
 #include "main.h"
 #include "display.h"
-#include "mbhttpsserver.h"
+#include "mbhttpserver.h"
 
 #define NTP_SERVER "de.pool.ntp.org"
 #define TZ_INFO "WEST-1DWEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00" // Western European Time

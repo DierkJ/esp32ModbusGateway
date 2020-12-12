@@ -1,8 +1,8 @@
 /**
 **********************************************************************************************************************************************************************************************************************************
-* @file:	mbhttpsserver.h
+* @file:	mbhttpserver.h
 *
-* @brief:	http(s) Server for Modbus Gateway
+* @brief:	http Server for Modbus Gateway
 *
 * @author:	Dierk Arp
 * @date:	20201129 16:01:24 
@@ -19,8 +19,8 @@
 *
 **********************************************************************************************************************************************************************************************************************************
 **/
-#ifndef _MBHTTPSSERVER_H_INCLUDED
-#define _MBHTTPSSERVER_H_INCLUDED
+#ifndef _MBHTTPSERVER_H_INCLUDED
+#define _MBHTTPSERVER_H_INCLUDED
 
 void StartHTTP(void); 
 
