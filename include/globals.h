@@ -1,4 +1,3 @@
-
 /**
 **********************************************************************************************************************************************************************************************************************************
 * @file:	globals.h
@@ -26,6 +25,14 @@
 // The mother of all embedded development...
 #include <Arduino.h>
 #include "ttgov1.h"   // our board
+
+// config defines
+#define OTA_SERVER
+// #define CAPTIVE_PORTAL
+// #define SPIFFS_EDITOR
+
+#define PANIC(...) abort()
+
 
 // I2C bus access control
 #define I2C_MUTEX_LOCK()                                                       \
@@ -60,7 +67,9 @@ typedef struct {
 extern SemaphoreHandle_t I2Caccess;
 
 // application includes
+#include "util.h"
 #include "display.h"
+#include "modbus.h"
 
 #endif
 

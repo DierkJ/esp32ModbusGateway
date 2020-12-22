@@ -1,11 +1,11 @@
 /**
 **********************************************************************************************************************************************************************************************************************************
-* @file:	main.h
+* @file:	util.h
 *
-* @brief:	Main Header
+* @brief:	header of stupid functions
 *
 * @author:	Dierk Arp
-* @date:	20201129 11:45:15 Sunday
+* @date:	20201129 11:36:51 Sunday
 * @version:	1.0
 *
 * @copyright:	(c)2020 Team HAHIS
@@ -19,25 +19,13 @@
 *
 **********************************************************************************************************************************************************************************************************************************
 **/
-#ifndef _MAIN_H_INCLUDED
-#define _MAIN_H_INCLUDED
+#ifndef _UTIL_H_INCLUDED
+#define _UTIL_H_INCLUDED
 
-#include <stdio.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include "sdkconfig.h"
+extern uint32_t g_minFreeHeap;
 
-#include <esp_spi_flash.h>   // needed for reading ESP32 chip attributes
-#include <esp_event_loop.h>  // needed for Wifi event handler
-#include <esp32-hal-timer.h> // needed for timers
-#include <esp_coexist.h>     // needed for showing coex sw version
-
-
-#include "globals.h"
-
-#include <WiFi.h>
-#include <WiFiManager.h> 
-#include "SPIFFS.h"
+long getChipId();
+String getUptimeString();
 
 
 #endif

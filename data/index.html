@@ -1,20 +1,61 @@
 <!DOCTYPE html>
 <html>
- 
     <head>
         <script src="src/jquery-3.3.1.min.js"></script>
         <script src="src/bootstrap.bundle.min.js"></script>
             <link rel="stylesheet" type="text/css" href="src/bootstrap.min.css">
     </head>
  
-    <body>
-<div class="jumbotron jumbotron-fluid">
-<div class="container">
-<h1 class="display-4">ModBusGateway</h1>
-<p class="lead">Testing Bootstrap.</p>
- 
-</div>
-</div>
-</body>
- 
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="jumbotron">
+                    <h2>
+                        ESP Modbus Gateway
+                    </h2>
+                    <p>
+                        (c) HAHIS 20.12.2020, 13:27
+                    </p>
+                    <p>
+                        <a class="btn btn-primary btn-large" href="https://www.hahis.de">Learn more</a>
+                    </p>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <form action="/setup" method="POST">   
+                            <button type="button" name="setup" value="setup" class="btn disabled btn-md btn-primary">
+                                Setup
+                            </button>
+                        </form>
+                    </div>
+                    <div class="col-md-4">
+                        <form action="/update" method="POST">
+                            <button type="button" name="update" value="1" class="btn btn-success">
+                                Update
+                            </button>
+                        </form> 
+                    </div>
+                    <div class="col-md-4">
+                         
+                        <button type="button" class="btn btn-success">
+                            Reboot
+                        </button>
+                    </div>
+                </div>
+                <table class="table">
+                    <TR><TH title="VOLTAGE">Voltage</TH><TD><A id='resp0'></A></TD><TD>V</TD></TR>
+                    <TR><TH title="CURRENT">Current</TH><TD><A id='resp1'></A></TD><TD>A</TD></TR>
+                    <TR><TH title="POWER">Power</TH><TD><A id='resp2'></A></TD><TD>W</TD></TR>
+                    <TR><TH title="FREQUENCY">Frequency</TH><TD><A id='resp4'></A></TD><TD>Hz</TD></TR>
+                    <TR><TH title="READ COUNT">Read Count </TH><TD><A id='sdmreadcnt'></A></TD><TD>total</TD></TR>
+                    <TR><TH title="ERROR COUNT">Error Count</TH><TD><A id='readerrtotal'></A></TD><TD>total</TD></TR>
+                    <TR><TH title="ERROR CODE">Error Cost </TH><TD><A id='readerrcode'></A></TD><TD>code</TD></TR>
+                    <TR><TH title="UPTIME">Uptime</TH><TD><A id='uptime'></A></TD><TD>d h:m:s</TD></TR>
+                    <TR><TH title="FREE HEAP">Free Heap</TH><TD><A id='freeheap'></A></TD><TD>bytes</TD></TR>                    <thead>
+                </table>
+                </div>
+        </div>
+    </div>
+</body> 
 </html>

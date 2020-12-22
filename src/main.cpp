@@ -24,7 +24,13 @@ static const char TAG[] = __FILE__;
 
 #include "main.h"
 #include "display.h"
+#include "modbus.h"
 #include "mbhttpserver.h"
+
+#ifdef OTA_SERVER
+#include <ArduinoOTA.h>
+#endif
+
 
 #define NTP_SERVER "de.pool.ntp.org"
 #define TZ_INFO "WEST-1DWEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00" // Western European Time
@@ -40,7 +46,6 @@ void saveConfigCallback ()
   ESP_LOGI(TAG, "Should save config");
   shouldSaveConfig = true;
 }
-
 
 void setup() 
 {
@@ -83,12 +88,19 @@ void setup()
   delay(100);
 
   dp_init(true);
-
   ESP_LOGI(TAG, "Display init");
+
+  // Open SPI FF
+  if(!SPIFFS.begin())
+  {
+     ESP_LOGI(TAG, "An Error has occurred while mounting SPIFFS");
+     return;
+  }
 
   //WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
   WiFiManager wm;
 
+  // for Test
   // wm.resetSettings();
 
   //set config save notify callback
@@ -121,20 +133,49 @@ void setup()
         dp_dump(displaybuf);
 
         delay(1000);
+        StartModBus();
         StartHTTP();
     }
 }
 
+// housekeeping
+uint32_t _minFreeHeap = 0;
+uint32_t _freeHeap = 0;
+long _tsMillis = 0;
+long _loopMillis = 0;
+
 
 void loop() 
 {
-  //  super simple loop
 
+  // loop duration
+  _tsMillis = millis();
+
+#ifdef OTA_SERVER
+    ArduinoOTA.handle();
+#endif
+
+  // update time
   struct tm local;
   getLocalTime(&local, 10000); 
 
-  dp_printf(0, 6, FONT_SMALL, 0, "Time: %2.2d:%2.2d:%2.2d", local.tm_hour, local.tm_min, local.tm_sec);
+  dp_printf(0, 6, FONT_SMALL, 0, "Time: %2.2d:%2.2d:%2.2d ", local.tm_hour, local.tm_min, local.tm_sec);
   dp_dump(displaybuf);
+
+  // loop duration without debug
+  _loopMillis = millis() - _tsMillis;
+
+  if (g_minFreeHeap != _minFreeHeap || ESP.getFreeHeap() != _freeHeap) 
+  {
+    _freeHeap = ESP.getFreeHeap();
+    if (_freeHeap < g_minFreeHeap)
+      g_minFreeHeap = _freeHeap;
+    _minFreeHeap = g_minFreeHeap;
+
+  }
+
+  // loop duration
+//  ESP_LOGI(TAG, "loop %ums", _loopMillis);
   delay(1000);
 
 }

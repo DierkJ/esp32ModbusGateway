@@ -8,7 +8,7 @@
 * @date:	20201129 11:29:27 Sunday
 * @version:	1.0
 *
-* @copyright:	(c)2020 Team HAHIS
+* @copyright:	(c) 2020 Team HAHIS
 *
 * The reproduction, distribution and utilization of this document
 * as well as the communication of its content to others without
@@ -160,7 +160,7 @@ void dp_drawPage(time_t t, bool nextpage)
   static uint8_t DisplayPage = 0;
 
   // line 1/2: pax counter
-  dp_printf(0, 0, FONT_STRETCHED, 0, "IMU SMP");
+  dp_printf(0, 0, FONT_STRETCHED, 0, "ModBus");
  
 start:
 

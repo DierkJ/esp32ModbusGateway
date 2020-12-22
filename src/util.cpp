@@ -1,11 +1,11 @@
 /**
 **********************************************************************************************************************************************************************************************************************************
-* @file:	main.h
+* @file:	util.cpp
 *
-* @brief:	Main Header
+* @brief:	some stupid functions...
 *
 * @author:	Dierk Arp
-* @date:	20201129 11:45:15 Sunday
+* @date:	20201129 09:52:12 Monday
 * @version:	1.0
 *
 * @copyright:	(c)2020 Team HAHIS
@@ -19,25 +19,45 @@
 *
 **********************************************************************************************************************************************************************************************************************************
 **/
-#ifndef _MAIN_H_INCLUDED
-#define _MAIN_H_INCLUDED
-
-#include <stdio.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include "sdkconfig.h"
-
-#include <esp_spi_flash.h>   // needed for reading ESP32 chip attributes
-#include <esp_event_loop.h>  // needed for Wifi event handler
-#include <esp32-hal-timer.h> // needed for timers
-#include <esp_coexist.h>     // needed for showing coex sw version
-
 
 #include "globals.h"
+#include "util.h"
 
-#include <WiFi.h>
-#include <WiFiManager.h> 
-#include "SPIFFS.h"
+// Local logging tag
+static const char TAG[] = __FILE__;
 
+uint32_t g_minFreeHeap = -1;
 
-#endif
+long getChipId()
+{
+  long chipId;
+  ESP.getEfuseMac();
+  return chipId;
+}
+
+String getUptimeString() 
+{
+  uint16_t days;
+  uint8_t hours;
+  uint8_t minutes;
+  uint8_t seconds;
+
+  #define SECS_PER_MIN  60
+  #define SECS_PER_HOUR 3600
+  #define SECS_PER_DAY  86400
+
+  time_t uptime = millis() / 1000;
+
+  seconds = uptime % SECS_PER_MIN;
+  uptime -= seconds;
+  minutes = (uptime % SECS_PER_HOUR) / SECS_PER_MIN;
+  uptime -= minutes * SECS_PER_MIN;
+  hours = (uptime % SECS_PER_DAY) / SECS_PER_HOUR;
+  uptime -= hours * SECS_PER_HOUR;
+  days = uptime / SECS_PER_DAY;
+
+  char buffer[20];
+  sprintf(buffer, "%4u days %02d:%02d:%02d", days, hours, minutes, seconds);
+  return buffer;  
+}
+

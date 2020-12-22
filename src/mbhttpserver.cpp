@@ -23,59 +23,180 @@ static const char TAG[] = __FILE__;
 
 #include "globals.h"
 #include "SPIFFS.h"
-#include "ESPAsyncWebServer.h"
+#include <ArduinoJson.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncJson.h>
+
+#ifdef SPIFFS_EDITOR
+#include "SPIFFSEditor.h"
+#endif
+
 
 #define CACHE_HEADER "max-age=86400"
+#define CORS_HEADER "Access-Control-Allow-Origin"
+
 #define CONTENT_TYPE_JSON "application/json"
 #define CONTENT_TYPE_PLAIN "text/plain"
 #define CONTENT_TYPE_HTML "text/html"
 
 
+uint32_t g_restartTime = 0;
+uint32_t g_lastAccessTime = 0;
 
 AsyncWebServer g_server(80);
 
-// We declare a function that will be the entry-point for the task that is going to be
-// created.
-void serverTask(void *params);
+void requestRestart()
+{
+  g_restartTime = millis() + 100;
+}
+
+void jsonResponse(AsyncWebServerRequest *request, int res, JsonVariant json)
+{
+  // touch
+  g_lastAccessTime = millis();
+
+  AsyncResponseStream *response = request->beginResponseStream(F(CONTENT_TYPE_JSON));
+  response->addHeader(F(CORS_HEADER), "*");
+  json.printTo(*response);
+  request->send(response);
+}
+
+String getIP()
+{
+  IPAddress ip = (WiFi.getMode() & WIFI_STA) ? WiFi.localIP() : WiFi.softAPIP();
+  return ip.toString();
+}
 
 /**
  * Handle set request from http server.
  */
 void handleNotFound(AsyncWebServerRequest *request)
 {
-  ESP_LOGI(TAG, "file not found %s\n", request->url().c_str());
+  ESP_LOGI(TAG, "file not found %s", request->url().c_str());
   request->send(404, F(CONTENT_TYPE_PLAIN), F("File not found"));
 }
+
+/**
+ * Status JSON api
+ */
+void handleGetStatus(AsyncWebServerRequest *request)
+{
+  ESP_LOGI(TAG, "%s (%d args)", request->url().c_str(), request->params());
+
+  StaticJsonBuffer<512> jsonBuffer;
+  JsonObject& json = jsonBuffer.createObject();
+
+  if (request->hasParam("initial")) 
+  {
+    char buf[16];
+    snprintf(buf, 16, "%06x", getChipId());
+    json[F("cpu")] = "ESP32";
+    json[F("serial")] = buf;
+    snprintf(buf, 16, "%s", PROGVERSION);
+    json[F("build")] = buf; 
+    // json[F("ssid")] = g_ssid;
+    // json[F("pass")] = g_pass;
+    json[F("flash")] = ESP.getFlashChipSize();
+    json[F("wifimode")] = (WiFi.getMode() & WIFI_STA) ? "Connected" : "Access Point";
+    json[F("ip")] = getIP();
+  }
+
+  long heap = ESP.getFreeHeap();
+  json[F("uptime")] = millis();
+  json[F("heap")] = heap;
+  json[F("minheap")] = g_minFreeHeap;
+//  json[F("resetcode")] = getResetReason(0);
+  // json[F("gpio")] = (uint32_t)(((GPI | GPO) & 0xFFFF) | ((GP16I & 0x01) << 16));
+
+  // reset free heap
+  g_minFreeHeap = heap;
+
+  jsonResponse(request, 200, json);
+}
+
+/**
+ * PowerMeter JSON api
+ */
+void handleGetPowerMeter(AsyncWebServerRequest *request)
+{
+  ESP_LOGI(TAG, "%s (%d args)", request->url().c_str(), request->params());
+
+  StaticJsonBuffer<512> jsonBuffer;
+  JsonObject& json = jsonBuffer.createObject();
+
+  json[F("connected")] = g_modBusMeterData.fConnected;
+
+  json[F("voltage")] = g_modBusMeterData.fVoltage;
+  json[F("current")] = g_modBusMeterData.fCurrent;
+  json[F("power")] = g_modBusMeterData.fPower;
+  json[F("frequency")] = g_modBusMeterData.fFrequency;
+  json[F("energyout")] = g_modBusMeterData.fEnergyOut;
+  json[F("energyin")] = g_modBusMeterData.fEnergyIn;
+  for (int i=0; i<3; i++)
+  {
+    char szBuf[32];
+    sprintf(szBuf, "u_phase_%1.1d", i+1);
+    json[szBuf] = g_modBusMeterData.fPhaseVoltage[i];
+    sprintf(szBuf, "i_phase_%1.1d", i+1);
+    json[szBuf] = g_modBusMeterData.fPhaseCurrent[i];
+  }
+  json[F("cycles")] = g_modBusMeterData.iCycles;         
+  json[F("ErrCnt")] = g_modBusMeterData.iErrCnt;        
+
+  jsonResponse(request, 200, json);
+}
+
+
+/**
+ * Handle Update.
+ */
+void handleUpdate(AsyncWebServerRequest *request)
+{
+  ESP_LOGI(TAG, "handleUpdate: %s (%d args)", request->url().c_str(), request->params());
+
+  String resp = F("<!DOCTYPE html><html><head><meta http-equiv=\"refresh\" content=\"5; url=/\"></head><body>");
+  int result = 400;
+
+  if (request->hasParam("Update"))
+    ESP_LOGI(TAG, "Update");
+  else
+  {
+    ESP_LOGI(TAG, "other Button:" );
+  }
+  resp += F("<h1>Updateed.</h1>");
+  resp += F("</body></html>");
+  request->send(result, F(CONTENT_TYPE_HTML), resp);
+}
+
+/**
+ * Handle Setup.
+ */
+void handleSetup(AsyncWebServerRequest *request)
+{
+    ESP_LOGI(TAG, "handleSetup: %s (%d args)", request->url().c_str(), request->params());
+
+  if (request->hasParam("Update"))
+    ESP_LOGI(TAG, "Update");
+  else
+  {
+    ESP_LOGI(TAG, "other Button:" );
+  }
+}
+
 
 
 void StartHTTP(void) 
 {
-  // Open SPI FF
-  if(!SPIFFS.begin())
-  {
-     ESP_LOGI(TAG, "An Error has occurred while mounting SPIFFS");
-     return;
-  }
 
-  // Setup the server as a separate task.
-  //ESP_LOGI(TAG, "Creating server task... ");
-  // We pass:
-  // serverTask   - the function that should be run as separate task
-  // "httpserver" - a name for the task (mainly used for logging)
-  // 6144         - stack size in byte. If you want up to four clients, you should
-  //              not go below 6kB. If your stack is too small, you will encounter
-  //              Panic and stack canary exceptions, usually during the call to
-  //              SSL_accept.
-  
-   //xTaskCreatePinnedToCore(serverTask, "httpserver", 6144, NULL, 1, NULL, 1);
-
-  // not found
+  // register not found
   g_server.onNotFound(handleNotFound);
 
   g_server.on("/index", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/index.html", "text/html");
   });
- 
+
+  
+
   g_server.on("/src/bootstrap.bundle.min.js", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/src/bootstrap.bundle.min.js", "text/javascript");
   });
@@ -88,44 +209,24 @@ void StartHTTP(void)
     request->send(SPIFFS, "/src/bootstrap.min.css", "text/css");
   });
  
+
+  // GET
+  g_server.on("/api/status", HTTP_GET, handleGetStatus);
+  g_server.on("/api/meter", HTTP_GET, handleGetPowerMeter);
+
+  // POST
+  g_server.on("/update", HTTP_POST, handleUpdate );
+  g_server.on("/setup", HTTP_POST, handleSetup );
+
+  // make sure config.json is not served!
+  g_server.on("/config.json", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(400);
+  });
+
   // catch-all
   g_server.serveStatic("/", SPIFFS, "/", CACHE_HEADER).setDefaultFile("index.html");
 
-
   g_server.begin();
   ESP_LOGI(TAG, "Bootstrap server started... ");
 
 }
-
-
-void serverTask(void *params) 
-{
-  // In the separate task we first do everything that we would have done in the
-  // setup() function, if we would run the server synchronously.
-
-  // Note: The second task has its own stack, so you need to think about where
-  // you create the server's resources and how to make sure that the server
-  // can access everything it needs to access. Also make sure that concurrent
-  // access is no problem in your sketch or implement countermeasures like locks
-  // or mutexes.
-  g_server.on("/index", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/index.html", "text/html");
-  });
- 
-  g_server.on("/src/bootstrap.bundle.min.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/src/bootstrap.bundle.min.js", "text/javascript");
-  });
- 
-  g_server.on("/src/jquery-3.3.1.min.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/src/jquery-3.3.1.min.js", "text/javascript");
-  });
- 
-  g_server.on("/src/bootstrap.min.css", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/src/bootstrap.min.css", "text/css");
-  });
- 
-  g_server.begin();
-  ESP_LOGI(TAG, "Bootstrap server started... ");
-  
-}
-  
