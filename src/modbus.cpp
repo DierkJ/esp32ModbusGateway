@@ -29,8 +29,8 @@ static const char TAG[] = __FILE__;
 #endif
 
 
-//esp32: pins for Serial2 => RX pin 35, TX pin 13
-SDM sdm(Serial2, 9600, NOT_A_PIN, SERIAL_8N1, 35, 13);                            
+//esp32: pins for Serial2 => RX pin 35, TX pin 13, pin 17: RTS (Rx/Tx switch)
+SDM sdm(Serial2, 9600, 17, SERIAL_8N1, 35, 13);                           
 
 /**
  * @brief
@@ -131,7 +131,7 @@ void StartModBus(modbus_meter_type_t dt, uint16_t devadr, uint32_t baudrate)
 
 void ModBusTask(void *params)
 {
-    ESP_LOGI(TAG, "inside ModBusTask with device: % at address: %d", Device2Text(modBusConfig.eDeviceType), modBusConfig.iDeviceAddr);
+    ESP_LOGI(TAG, "inside ModBusTask with device: %s at address: %d", Device2Text(modBusConfig.eDeviceType), modBusConfig.iDeviceAddr);
     while (1)
     {
         if (!g_modBusMeterData.fConnected)
@@ -139,8 +139,9 @@ void ModBusTask(void *params)
             //
             // read first register as connection test. Should work for all devices
             //
-            float fTmp = sdm.readVal(SDM_PHASE_1_VOLTAGE, modBusConfig.iDeviceAddr);
-            if ( !(isnan(fTmp)) && (sdm.getErrCode() == SDM_ERR_NO_ERROR))
+            float fTmp = sdm.readVal(SDM_TOTAL_SYSTEM_POWER, modBusConfig.iDeviceAddr);
+            //if ( !(isnan(fTmp)) && (sdm.getErrCode() == SDM_ERR_NO_ERROR))
+            if (sdm.getErrCode() == SDM_ERR_NO_ERROR)
             {
                 ESP_LOGI(TAG, "Modbus connected");
                 sdm.clearErrCount();
@@ -149,6 +150,8 @@ void ModBusTask(void *params)
             else
             {
                 ESP_LOGI(TAG, "Modbus failure (%d) %s", sdm.getErrCode(), ModBusError2Text(sdm.getErrCode()));
+                sdm.clearErrCode();
+                
                 // try again after 1 s
                 delay(1000);
             }
