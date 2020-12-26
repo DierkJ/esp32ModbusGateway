@@ -57,7 +57,7 @@ void jsonResponse(AsyncWebServerRequest *request, int res, JsonVariant json)
 
   AsyncResponseStream *response = request->beginResponseStream(F(CONTENT_TYPE_JSON));
   response->addHeader(F(CORS_HEADER), "*");
-  json.printTo(*response);
+  serializeJson(json, *response);
   request->send(response);
 }
 
@@ -83,8 +83,8 @@ void handleGetStatus(AsyncWebServerRequest *request)
 {
   ESP_LOGI(TAG, "%s (%d args)", request->url().c_str(), request->params());
 
-  StaticJsonBuffer<512> jsonBuffer;
-  JsonObject& json = jsonBuffer.createObject();
+  StaticJsonDocument<512> jsonDoc;
+  JsonObject json = jsonDoc.as<JsonObject>(); 
 
   if (request->hasParam("initial")) 
   {
@@ -121,8 +121,8 @@ void handleGetPowerMeter(AsyncWebServerRequest *request)
 {
   ESP_LOGI(TAG, "%s (%d args)", request->url().c_str(), request->params());
 
-  StaticJsonBuffer<512> jsonBuffer;
-  JsonObject& json = jsonBuffer.createObject();
+  StaticJsonDocument<512> jsonDoc;
+  JsonObject json = jsonDoc.as<JsonObject>(); 
 
   json[F("connected")] = g_modBusMeterData.fConnected;
 
@@ -197,7 +197,8 @@ void StartHTTP(void)
 
   
 
-  g_server.on("/src/bootstrap.bundle.min.js", HTTP_GET, [](AsyncWebServerRequest *request){
+  g_server.on("/src/bootstrap.bundle.min.js", HTTP_GET, [](AsyncWebServerRequest *request)
+  {
     request->send(SPIFFS, "/src/bootstrap.bundle.min.js", "text/javascript");
   });
  

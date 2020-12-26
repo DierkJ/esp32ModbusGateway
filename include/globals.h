@@ -8,7 +8,7 @@
 * @date:	20201129 11:40:51 Sunday
 * @version:	1.0
 *
-* @copyright:	(c)2020 Team HAHIS
+* @copyright:	(c) 2020 Team HAHIS
 *
 * The reproduction, distribution and utilization of this document
 * as well as the communication of its content to others without
@@ -65,11 +65,14 @@ typedef struct {
 } configData_t;
 
 extern SemaphoreHandle_t I2Caccess;
+extern String g_devicename ;
+
 
 // application includes
 #include "util.h"
 #include "display.h"
 #include "modbus.h"
+#include "ota.h"
 
 #endif
 

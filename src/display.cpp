@@ -349,3 +349,26 @@ void dp_plotCurve(uint16_t count, bool reset) {
   last_count = count;
   dp_drawPixel(plotbuf, col, row, 1);
 }
+
+/**
+ * @brief displays a progressbar
+ * 
+ * @param x       origin x
+ * @param y       origin y
+ * @param width   
+ * @param height 
+ * @param progress  0..100,  no limit checks 
+ */
+
+void dp_progressbar(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t progress)
+{
+    // draw box
+    oledDrawLine(&ssoled, x, y, x+width, y, false);
+    oledDrawLine(&ssoled, x, y+height, x+width, y+height, false);
+    oledDrawLine(&ssoled, x, y, x, y+height, false);
+    oledDrawLine(&ssoled, x+width, y, x+width, y+height, false);
+
+    // fill progress
+    uint16_t maxProgressWidth = (width-2) * progress / 100;
+    dp_fillRect (x+1, y+1, maxProgressWidth, height-2, false);
+}

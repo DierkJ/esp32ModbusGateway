@@ -131,5 +131,7 @@ int dp_drawPixel(uint8_t *buf, const uint16_t x, const uint16_t y,
                  const uint8_t dot);
 void dp_plotCurve(uint16_t count, bool reset);
 void dp_rescaleBuffer(uint8_t *buf, const int factor);
+void dp_progressbar(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t progress);
+
 
 #endif

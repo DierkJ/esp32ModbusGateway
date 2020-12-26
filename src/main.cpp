@@ -21,7 +21,6 @@
 **/
 static const char TAG[] = __FILE__;
 
-
 #include "main.h"
 #include "display.h"
 #include "modbus.h"
@@ -36,9 +35,12 @@ static const char TAG[] = __FILE__;
 #define TZ_INFO "WEST-1DWEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00" // Western European Time
 
 SemaphoreHandle_t I2Caccess;
+String g_devicename = "HahisModbusGW";
+
+
 
 //flag for saving data
-bool shouldSaveConfig = false;
+static bool shouldSaveConfig = false;
 
 //callback notifying us of the need to save config
 void saveConfigCallback () 
@@ -107,7 +109,7 @@ void setup()
   wm.setSaveConfigCallback(saveConfigCallback);
   
   bool res;
-  res = wm.autoConnect("Hahis ModbusGW"); // anonymous ap
+  res = wm.autoConnect(g_devicename.c_str()); // anonymous ap
  
   if(!res) 
   {
@@ -135,6 +137,7 @@ void setup()
         delay(1000);
         StartModBus();
         StartHTTP();
+        otaInit();
     }
 }
 
@@ -151,9 +154,7 @@ void loop()
   // loop duration
   _tsMillis = millis();
 
-#ifdef OTA_SERVER
-    ArduinoOTA.handle();
-#endif
+  otaHandle();
 
   // update time
   struct tm local;
