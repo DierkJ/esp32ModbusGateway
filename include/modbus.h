@@ -63,5 +63,6 @@ typedef struct {
 
 extern void StartModBus(modbus_meter_type_t dt = MT_SDM630, uint16_t devadr = 1, uint32_t baudrate = 9600);
 
+
 #endif
 

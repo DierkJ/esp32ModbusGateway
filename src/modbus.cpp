@@ -23,6 +23,7 @@ static const char TAG[] = __FILE__;
 
 #include <SDM.h>                                                                //https://github.com/reaper7/SDM_Energy_Meter
 #include "modbus.h"
+#include "ModbusRegister.h"
 
 #if !defined ( USE_HARDWARESERIAL )
   #error "This example works with Hardware Serial on esp32, please uncomment #define USE_HARDWARESERIAL in SDM_Config_User.h"
@@ -112,6 +113,11 @@ static float ReadNonNAN (uint16_t reg, uint8_t node)
         return fTmp;
 }
 
+static float ReadFinder (uint16_t reg, uint8_t node)
+{
+    float fTmp = sdm.readVal(reg, node);
+
+}
 
 void StartModBus(modbus_meter_type_t dt, uint16_t devadr, uint32_t baudrate)
 {
@@ -160,7 +166,11 @@ void ModBusTask(void *params)
         {
             if (modBusConfig.eDeviceType == MT_FINDER)
             {
-                ESP_LOGI(TAG, "Finder not yet supported");
+                g_modBusMeterData.fVoltage = ReadFinder(FINDER_PHASE_1_VOLTAGE, modBusConfig.iDeviceAddr);
+                g_modBusMeterData.fCurrent = ReadFinder(FINDER_PHASE_1_CURRENT, modBusConfig.iDeviceAddr);
+                g_modBusMeterData.fPower = ReadFinder(FINDER_PHASE_1_POWER, modBusConfig.iDeviceAddr);
+                g_modBusMeterData.fEnergyOut = ReadFinder(FINDER_IMPORT_ACTIVE_ENERGY, modBusConfig.iDeviceAddr);
+                g_modBusMeterData.fEnergyIn = ReadFinder(FINDER_EXPORT_ACTIVE_ENERGY, modBusConfig.iDeviceAddr);
             }
             else if (modBusConfig.eDeviceType == MT_DDM)
             {
