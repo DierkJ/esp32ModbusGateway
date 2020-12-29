@@ -30,9 +30,11 @@ typedef struct {
   float fVoltage;           // voltage [V]
   float fCurrent;           // Current [A] 
   float fPower;             // Power [W]
+  float fReactivePower;     // reactive Power [VAr] 
   float fFrequency;         // line frequency [Hz]
   float fEnergyOut;         // el. energy consumption [kWh]
   float fEnergyIn;          // el. energy production  [kWh]
+  
   // only for 3 phase meters (SDM 630)
   float fPhaseVoltage[3];   // voltages on phase 0,1,2 [V]
   float fPhaseCurrent[3];   // current on phase 0,1,2 [A]
@@ -41,6 +43,7 @@ typedef struct {
   boolean fConnected;       // are we connected
   uint32_t iCycles;         // # of read cycles
   uint16_t iErrCnt;         // # communication errors
+  uint16_t iLastErr;        // # of last error
 } modbus_meter_t;
 
 extern modbus_meter_t g_modBusMeterData;
@@ -62,6 +65,7 @@ typedef struct {
 } modbus_config_t;
 
 extern void StartModBus(modbus_meter_type_t dt = MT_SDM630, uint16_t devadr = 1, uint32_t baudrate = 9600);
+extern void ModBusHandle(void);
 
 
 #endif

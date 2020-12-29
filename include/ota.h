@@ -28,8 +28,9 @@
 #ifndef _OTA_H_INCLUDED
 #define _OTA_H_INCLUDED
 
-#define OTA_DIRECT
-// #define OTA_WEB
+// #define OTA_DIRECT      // use direct upload via TCP
+// #define OTA_WEB      // use download from local web page
+// #define OTA_IAS         // use IOTAppStory by Andreas Spiess
 // #define OTA_BACKEND
 
 

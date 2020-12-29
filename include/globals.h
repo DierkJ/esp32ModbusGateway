@@ -26,10 +26,14 @@
 #include <Arduino.h>
 #include "ttgov1.h"   // our board
 
+#define COMPDATE __DATE__ __TIME__
+
 // config defines
 #define OTA_SERVER
 // #define CAPTIVE_PORTAL
 // #define SPIFFS_EDITOR
+
+// #define WIFI_MANAGER
 
 #define PANIC(...) abort()
 

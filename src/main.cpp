@@ -21,33 +21,19 @@
 **/
 static const char TAG[] = __FILE__;
 
+
 #include "main.h"
 #include "display.h"
 #include "modbus.h"
 #include "mbhttpserver.h"
 
-#ifdef OTA_SERVER
-#include <ArduinoOTA.h>
-#endif
 
 
 #define NTP_SERVER "de.pool.ntp.org"
 #define TZ_INFO "WEST-1DWEST-2,M3.5.0/02:00:00,M10.5.0/03:00:00" // Western European Time
 
 SemaphoreHandle_t I2Caccess;
-String g_devicename = "HahisModbusGW";
-
-
-
-//flag for saving data
-static bool shouldSaveConfig = false;
-
-//callback notifying us of the need to save config
-void saveConfigCallback () 
-{
-  ESP_LOGI(TAG, "Should save config");
-  shouldSaveConfig = true;
-}
+String g_devicename = "HahisMBGW01";
 
 void setup() 
 {
@@ -58,13 +44,15 @@ void setup()
 
 
   // Set WiFi to station mode and disconnect from an AP if it was previously connected
+/*
   WiFi.mode(WIFI_STA);
+  delay(250);
   WiFi.disconnect();
+*/
 
   Serial.begin(115200);
-
   esp_log_level_set("*", ESP_LOG_INFO);
-
+ 
   esp_chip_info_t chip_info;
   esp_chip_info(&chip_info);
   ESP_LOGI(TAG,
@@ -89,6 +77,7 @@ void setup()
 
   delay(100);
 
+ 
   dp_init(true);
   ESP_LOGI(TAG, "Display init");
 
@@ -99,18 +88,26 @@ void setup()
      return;
   }
 
+  bool res;
+
+#ifdef WIFI_MANAGER
   //WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
   WiFiManager wm;
-
   // for Test
   // wm.resetSettings();
-
-  //set config save notify callback
-  wm.setSaveConfigCallback(saveConfigCallback);
-  
-  bool res;
   res = wm.autoConnect(g_devicename.c_str()); // anonymous ap
- 
+  //res = WiFi.isConnected();
+#else
+
+    WiFi.mode(WIFI_STA);
+    WiFi.begin("$%XY", "lamsenjoch27");
+    if (WiFi.waitForConnectResult() != WL_CONNECTED) 
+      res = false;
+    else
+      res = true;
+
+#endif
+
   if(!res) 
   {
         ESP_LOGI(TAG, "Failed to connect");
@@ -155,6 +152,8 @@ void loop()
   _tsMillis = millis();
 
   otaHandle();
+  ModBusHandle();
+
 
   // update time
   struct tm local;

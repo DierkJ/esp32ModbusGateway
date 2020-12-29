@@ -34,6 +34,20 @@ static const char TAG[] = __FILE__;
 #include "globals.h"
 #include "ota.h"
 
+#include <ArduinoOTA.h>
+
+#ifdef OTA_IAS
+
+#define MODEBUTTON 0
+#include <IOTAppStory.h>		            // IOTAppStory.com library
+IOTAppStory IAS(COMPDATE, MODEBUTTON);	// Initialize IotAppStory
+
+#endif
+
+
+/*
+**  local status functions (oled / web)
+*/
 void otaDisplayStart()
 {
     dp_clear();
@@ -61,17 +75,24 @@ void otaDisplayProgress(unsigned int progress, unsigned int total)
     dp_dump(displaybuf);
 }
 
-void otaDisplayError(ota_error_t error, char *szText) 
+void otaDisplayError(int error, char *szText) 
 {
     dp_clear();
     dp_printf(0, 0, FONT_LARGE, 0, "OTA" );
-    dp_printf(0, 5, FONT_SMALL, 0, "Error: %s (%d)", szText, error);
+    if (szText == NULL)
+      dp_printf(0, 5, FONT_SMALL, 0, "Error: %d", error);
+    else
+      dp_printf(0, 5, FONT_SMALL, 0, "Error: %s (%d)", szText, error);
+    
     dp_dump(displaybuf);
 }
 
+/**
+ * @brief call OTA initialization on startup
+ * 
+ */
 void otaInit() 
 {
-
 #ifdef OTA_DIRECT 
   ArduinoOTA.setHostname(g_devicename.c_str());
 
@@ -94,30 +115,83 @@ void otaInit()
   ArduinoOTA.onError([](ota_error_t error) 
   {
     ESP_LOGI(TAG, "OTA_DIRECT: onError: %d", error);
-    
+
     switch (error)
     {
       case OTA_AUTH_ERROR:  
-        otaDisplayError( error, "Auth Failed");
+        otaDisplayError( (int)error, "Auth Failed");
         break;
       case OTA_BEGIN_ERROR:  
-        otaDisplayError( error, "Begin Failed");
+        otaDisplayError( (int)error, "Begin Failed");
         break;
       case OTA_CONNECT_ERROR:  
-        otaDisplayError( error, "Connect Failed");
+        otaDisplayError( (int)error, "Connect Failed");
         break;
       case OTA_RECEIVE_ERROR:  
-        otaDisplayError( error, "RX Failed");
+        otaDisplayError( (int)error, "RX Failed");
         break;
       case OTA_END_ERROR:  
-        otaDisplayError( error, "End Failed");
+        otaDisplayError( (int)error, "End Failed");
         break;
       default:  
-        otaDisplayError( error, "unknown");
+        otaDisplayError( (int)error, "unknown");
         break;
     }
   });
   ArduinoOTA.begin();
+
+#endif
+
+#ifdef OTA_IAS
+  IAS.preSetDeviceName(g_devicename);                       // preset deviceName this is also your MDNS responder: http://'g_devicename'.local
+  //IAS.preSetAutoUpdate(false);                            // automaticUpdate (true, false)
+  //IAS.preSetAutoConfig(false);                            // automaticConfig (true, false)
+  
+  IAS.onModeButtonShortPress([]() {
+    ESP_LOGI(TAG," If mode button is released, I will enter in firmware update mode.");
+  });
+
+  IAS.onModeButtonLongPress([]() {
+    ESP_LOGI(TAG," If mode button is released, I will enter in configuration mode.");
+  });
+
+  IAS.onModeButtonVeryLongPress([]() {
+    ESP_LOGI(TAG," If mode button is released, I will enter in ??? mode.");
+  });
+
+  IAS.onFirmwareUpdateProgress([](int written, int total)
+  {
+    otaDisplayProgress(written, total);
+  });
+  
+  IAS.onModeButtonNoPress([]() {
+    ESP_LOGI(TAG," Mode button is not pressed");
+  });
+  
+  IAS.onFirstBoot([]() {                              
+    ESP_LOGI(TAG,"onFirstBoot");
+  });
+
+  IAS.onFirmwareUpdateCheck([]() {
+    ESP_LOGI(TAG,"Checking if there is a firmware update available.");
+  });
+
+  IAS.onFirmwareUpdateDownload([]() {
+    ESP_LOGI(TAG,"Downloading and Installing firmware update.");
+    otaDisplayStart();
+  });
+
+  IAS.onFirmwareUpdateError([]() {
+    ESP_LOGI(TAG,"pdate failed...Check your logs");
+    otaDisplayError(55, NULL);
+  });
+
+  IAS.onConfigMode([]() {
+    ESP_LOGI(TAG,"Starting configuration mode. Search for my WiFi and connect to 192.168.4.1.");
+  });
+   
+  IAS.begin();                                   // Run IOTAppStory
+  IAS.setCallHomeInterval(120);                  // Call home interval in seconds(disabled by default), 0 = off, use 60s only for development. Please change it to at least 2 hours in production
 
 #endif
 
@@ -129,6 +203,14 @@ void otaHandle()
 #ifdef OTA_SERVER
     ArduinoOTA.handle();
 #endif
+
+#ifdef OTA_IAS
+  IAS.loop();   // this routine handles the calling home functionality,
+                // reaction of the MODEBUTTON pin. If short press (<4 sec): update of sketch, long press (>7 sec): Configuration
+                // reconnecting WiFi when the connection is lost,
+                // and setting the internal clock (ESP8266 for BearSSL)
+#endif
+
 
 }
 

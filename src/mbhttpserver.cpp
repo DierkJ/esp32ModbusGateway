@@ -24,8 +24,8 @@ static const char TAG[] = __FILE__;
 #include "globals.h"
 #include "SPIFFS.h"
 #include <ArduinoJson.h>
-#include <ESPAsyncWebServer.h>
 #include <AsyncJson.h>
+#include <ESPAsyncWebServer.h>
 
 #ifdef SPIFFS_EDITOR
 #include "SPIFFSEditor.h"
@@ -50,17 +50,6 @@ void requestRestart()
   g_restartTime = millis() + 100;
 }
 
-void jsonResponse(AsyncWebServerRequest *request, int res, JsonVariant json)
-{
-  // touch
-  g_lastAccessTime = millis();
-
-  AsyncResponseStream *response = request->beginResponseStream(F(CONTENT_TYPE_JSON));
-  response->addHeader(F(CORS_HEADER), "*");
-  serializeJson(json, *response);
-  request->send(response);
-}
-
 String getIP()
 {
   IPAddress ip = (WiFi.getMode() & WIFI_STA) ? WiFi.localIP() : WiFi.softAPIP();
@@ -83,35 +72,39 @@ void handleGetStatus(AsyncWebServerRequest *request)
 {
   ESP_LOGI(TAG, "%s (%d args)", request->url().c_str(), request->params());
 
-  StaticJsonDocument<512> jsonDoc;
-  JsonObject json = jsonDoc.as<JsonObject>(); 
+  AsyncJsonResponse * response = new AsyncJsonResponse();
+  response->addHeader("Server","ESP Async Web Server");
+  JsonObject root = response->getRoot();
 
   if (request->hasParam("initial")) 
   {
     char buf[16];
     snprintf(buf, 16, "%06x", getChipId());
-    json[F("cpu")] = "ESP32";
-    json[F("serial")] = buf;
+    root[F("cpu")] = "ESP32";
+    root[F("serial")] = buf;
     snprintf(buf, 16, "%s", PROGVERSION);
-    json[F("build")] = buf; 
-    // json[F("ssid")] = g_ssid;
-    // json[F("pass")] = g_pass;
-    json[F("flash")] = ESP.getFlashChipSize();
-    json[F("wifimode")] = (WiFi.getMode() & WIFI_STA) ? "Connected" : "Access Point";
-    json[F("ip")] = getIP();
+    root[F("build")] = buf; 
+    // root[F("ssid")] = g_ssid;
+    // root[F("pass")] = g_pass;
+    root[F("flash")] = ESP.getFlashChipSize();
+    root[F("wifimode")] = (WiFi.getMode() & WIFI_STA) ? "Connected" : "Access Point";
+    root[F("ip")] = getIP();
   }
 
   long heap = ESP.getFreeHeap();
-  json[F("uptime")] = millis();
-  json[F("heap")] = heap;
-  json[F("minheap")] = g_minFreeHeap;
-//  json[F("resetcode")] = getResetReason(0);
-  // json[F("gpio")] = (uint32_t)(((GPI | GPO) & 0xFFFF) | ((GP16I & 0x01) << 16));
+  root[F("uptime")] = millis();
+  root[F("heap")] = heap;
+  root[F("minheap")] = g_minFreeHeap;
+  root[F("lastaccess")] = g_lastAccessTime;
+//  root[F("resetcode")] = getResetReason(0);
+//  root[F("gpio")] = (uint32_t)(((GPI | GPO) & 0xFFFF) | ((GP16I & 0x01) << 16));
 
   // reset free heap
   g_minFreeHeap = heap;
+  g_lastAccessTime = millis();
 
-  jsonResponse(request, 200, json);
+  response->setLength();
+  request->send(response);
 }
 
 /**
@@ -121,29 +114,34 @@ void handleGetPowerMeter(AsyncWebServerRequest *request)
 {
   ESP_LOGI(TAG, "%s (%d args)", request->url().c_str(), request->params());
 
-  StaticJsonDocument<512> jsonDoc;
-  JsonObject json = jsonDoc.as<JsonObject>(); 
+  AsyncJsonResponse * response = new AsyncJsonResponse();
+  response->addHeader("Server","ESP Async Web Server");
+  JsonObject root = response->getRoot();
 
-  json[F("connected")] = g_modBusMeterData.fConnected;
+  root[F("connected")] = g_modBusMeterData.fConnected;
 
-  json[F("voltage")] = g_modBusMeterData.fVoltage;
-  json[F("current")] = g_modBusMeterData.fCurrent;
-  json[F("power")] = g_modBusMeterData.fPower;
-  json[F("frequency")] = g_modBusMeterData.fFrequency;
-  json[F("energyout")] = g_modBusMeterData.fEnergyOut;
-  json[F("energyin")] = g_modBusMeterData.fEnergyIn;
+  root[F("voltage")] = g_modBusMeterData.fVoltage;
+  root[F("current")] = g_modBusMeterData.fCurrent;
+  root[F("power")] = g_modBusMeterData.fPower;
+  root[F("reactive_power")] = g_modBusMeterData.fReactivePower;
+  root[F("frequency")] = g_modBusMeterData.fFrequency;
+  root[F("energyout")] = g_modBusMeterData.fEnergyOut;
+  root[F("energyin")] = g_modBusMeterData.fEnergyIn;
   for (int i=0; i<3; i++)
   {
     char szBuf[32];
     sprintf(szBuf, "u_phase_%1.1d", i+1);
-    json[szBuf] = g_modBusMeterData.fPhaseVoltage[i];
+    root[szBuf] = g_modBusMeterData.fPhaseVoltage[i];
     sprintf(szBuf, "i_phase_%1.1d", i+1);
-    json[szBuf] = g_modBusMeterData.fPhaseCurrent[i];
+    root[szBuf] = g_modBusMeterData.fPhaseCurrent[i];
   }
-  json[F("cycles")] = g_modBusMeterData.iCycles;         
-  json[F("ErrCnt")] = g_modBusMeterData.iErrCnt;        
+  root[F("cycles")] = g_modBusMeterData.iCycles;         
+  root[F("ErrCnt")] = g_modBusMeterData.iErrCnt;        
 
-  jsonResponse(request, 200, json);
+  g_lastAccessTime = millis();
+
+  response->setLength();
+  request->send(response);
 }
 
 
@@ -183,19 +181,44 @@ void handleSetup(AsyncWebServerRequest *request)
   }
 }
 
-
+const char* PARAM_MESSAGE = "message";
 
 void StartHTTP(void) 
 {
 
   // register not found
   g_server.onNotFound(handleNotFound);
+  g_server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(200, "text/plain", "Hello, world");
+    });
 
+    // Send a GET request to <IP>/get?message=<message>
+  g_server.on("/get", HTTP_GET, [] (AsyncWebServerRequest *request) {
+        String message;
+        if (request->hasParam(PARAM_MESSAGE)) {
+            message = request->getParam(PARAM_MESSAGE)->value();
+        } else {
+            message = "No message sent";
+        }
+        request->send(200, "text/plain", "Hello, GET: " + message);
+    });
+
+    // Send a POST request to <IP>/post with a form field message set to <message>
+  g_server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request){
+        String message;
+        if (request->hasParam(PARAM_MESSAGE, true)) {
+            message = request->getParam(PARAM_MESSAGE, true)->value();
+        } else {
+            message = "No message sent";
+        }
+        request->send(200, "text/plain", "Hello, POST: " + message);
+    });
+
+
+  /*
   g_server.on("/index", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/index.html", "text/html");
   });
-
-  
 
   g_server.on("/src/bootstrap.bundle.min.js", HTTP_GET, [](AsyncWebServerRequest *request)
   {
@@ -210,6 +233,7 @@ void StartHTTP(void)
     request->send(SPIFFS, "/src/bootstrap.min.css", "text/css");
   });
  
+*/
 
   // GET
   g_server.on("/api/status", HTTP_GET, handleGetStatus);
@@ -223,9 +247,10 @@ void StartHTTP(void)
   g_server.on("/config.json", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(400);
   });
-
+/*
   // catch-all
   g_server.serveStatic("/", SPIFFS, "/", CACHE_HEADER).setDefaultFile("index.html");
+*/
 
   g_server.begin();
   ESP_LOGI(TAG, "Bootstrap server started... ");
