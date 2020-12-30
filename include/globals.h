@@ -33,6 +33,7 @@
 // #define CAPTIVE_PORTAL
 // #define SPIFFS_EDITOR
 
+#define HAS_LORA
 // #define WIFI_MANAGER
 
 #define PANIC(...) abort()

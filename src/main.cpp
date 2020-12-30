@@ -25,8 +25,8 @@ static const char TAG[] = __FILE__;
 #include "main.h"
 #include "display.h"
 #include "modbus.h"
+#include "lorawan.h"
 #include "mbhttpserver.h"
-
 
 
 #define NTP_SERVER "de.pool.ntp.org"
@@ -135,47 +135,42 @@ void setup()
         StartModBus();
         StartHTTP();
         otaInit();
+        loraInit();
     }
 }
 
 // housekeeping
 uint32_t _minFreeHeap = 0;
 uint32_t _freeHeap = 0;
-long _tsMillis = 0;
-long _loopMillis = 0;
 
+static long _tsMillis = 0;
+static long _loopMillis = 0;
 
 void loop() 
 {
 
-  // loop duration
-  _tsMillis = millis();
-
   otaHandle();
   ModBusHandle();
-
-
-  // update time
-  struct tm local;
-  getLocalTime(&local, 10000); 
-
-  dp_printf(0, 6, FONT_SMALL, 0, "Time: %2.2d:%2.2d:%2.2d ", local.tm_hour, local.tm_min, local.tm_sec);
-  dp_dump(displaybuf);
-
-  // loop duration without debug
-  _loopMillis = millis() - _tsMillis;
-
-  if (g_minFreeHeap != _minFreeHeap || ESP.getFreeHeap() != _freeHeap) 
+  loraHandle();
+ 
+  if ((millis() - _tsMillis) > 1000L)
   {
-    _freeHeap = ESP.getFreeHeap();
-    if (_freeHeap < g_minFreeHeap)
-      g_minFreeHeap = _freeHeap;
-    _minFreeHeap = g_minFreeHeap;
+    // update time
+    struct tm local;
+    getLocalTime(&local, 10000); 
 
+    dp_printf(0, 6, FONT_SMALL, 0, "Time: %2.2d:%2.2d:%2.2d ", local.tm_hour, local.tm_min, local.tm_sec);
+    dp_dump(displaybuf);
+
+  
+    if (g_minFreeHeap != _minFreeHeap || ESP.getFreeHeap() != _freeHeap) 
+    {
+      _freeHeap = ESP.getFreeHeap();
+      if (_freeHeap < g_minFreeHeap)
+        g_minFreeHeap = _freeHeap;
+      _minFreeHeap = g_minFreeHeap;
+
+    }
+    _tsMillis = millis();
   }
-
-  // loop duration
-//  ESP_LOGI(TAG, "loop %ums", _loopMillis);
-  delay(1000);
-
 }

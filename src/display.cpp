@@ -43,8 +43,6 @@ SSOLED ssoled;
  */
 void dp_setup(int contrast) 
 {
-
- 
   int rc = oledInit(&ssoled, MY_DISPLAY_TYPE, OLED_ADDR, MY_DISPLAY_FLIP,
                     MY_DISPLAY_INVERT, USE_HW_I2C, MY_DISPLAY_SDA,
                     MY_DISPLAY_SCL, OLED_RST,
@@ -85,7 +83,7 @@ void dp_init(bool verbose)
       esp_chip_info_t chip_info;
       esp_chip_info(&chip_info);
       dp_printf(0, 0, 0, 0, "** Hahis ModBus **");
-//      dp_printf(0, 1, 0, 0, "Software v%s", PROGVERSION);
+      dp_printf(0, 1, 0, 0, "Software v%s", PROGVERSION);
       dp_printf(0, 3, 0, 0, "ESP32 %d cores", chip_info.cores);
       dp_printf(0, 4, 0, 0, "Chip Rev.%d", chip_info.revision);
       dp_printf(0, 5, 0, 0, "WiFi%s%s",
@@ -123,7 +121,7 @@ void dp_refresh(bool nextPage)
   static uint32_t framecounter = 0;
 #endif
 
-  // if display is switched off we don't refresh it to relax cpu
+// if display is switched off we don't refresh it to relax cpu
 //  if (!DisplayIsOn && (DisplayIsOn == cfg.screenon))
 //    return;
 
@@ -359,7 +357,6 @@ void dp_plotCurve(uint16_t count, bool reset) {
  * @param height 
  * @param progress  0..100,  no limit checks 
  */
-
 void dp_progressbar(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t progress)
 {
     // draw box

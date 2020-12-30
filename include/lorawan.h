@@ -1,17 +1,12 @@
 /**
 **********************************************************************************************************************************************************************************************************************************
-* @file:	ota.h
+* @file:	lorawan.h
 *
-* @brief:	OTA functions
+* @brief:	lorawan functions
 *
-*           different methodes for OTA:
-*
-*           1:  direct OTA per TCP / ESP32 
-*           2:  Webupdate from file
-*           3:  automatic per Backend
 *
 * @author:	Dierk Arp
-* @date:	20201224 11:36:51 
+* @date:	20201230 11:36:51 
 * @version:	1.0
 *
 * @copyright:	(c) 2020 Team HAHIS
@@ -25,17 +20,11 @@
 *
 **********************************************************************************************************************************************************************************************************************************
 **/
-#ifndef _OTA_H_INCLUDED
-#define _OTA_H_INCLUDED
+#ifndef _LORAWAN_H_INCLUDED
+#define _LORAWAN_H_INCLUDED
 
-#define OTA_DIRECT      // use direct upload via TCP
-// #define OTA_WEB      // use download from local web page
-// #define OTA_IAS         // use IOTAppStory by Andreas Spiess
-// #define OTA_BACKEND
-
-
-void otaInit() ;
-void otaHandle() ;
+void loraInit() ;
+void loraHandle() ;
 
 
 #endif
