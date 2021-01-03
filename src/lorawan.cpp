@@ -39,8 +39,8 @@ static const char TAG[] = __FILE__;
 const unsigned TX_INTERVAL = 60;
 static osjob_t sendjob;
 
-// demo data
-static uint8_t mydata[] = "Hello, world!";
+// static TX Buffer
+static uint8_t bTxBuffer[32];
 
 // Function to do a byte swap in a byte array
 static void RevBytes(unsigned char *b, size_t c) 
@@ -144,8 +144,16 @@ void do_send(osjob_t* j)
     } 
     else 
     {
+        //
+        // simple data for port #1 first...
+        // later: TX queue
+        *(float *) &bTxBuffer[0] = g_modBusMeterData.fEnergyIn;
+        *(float *) &bTxBuffer[4] = g_modBusMeterData.fEnergyOut;
+        *(float *) &bTxBuffer[8] = g_modBusMeterData.fPower;
+
         // Prepare upstream data transmission at the next possible time.
-        LMIC_setTxData2(1, mydata, sizeof(mydata)-1, 0);
+        LMIC_setTxData2(1, bTxBuffer, 3*sizeof(float), 0);
+
         ESP_LOGI(TAG, "Packet queued");
     }
     // Next TX is scheduled after TX_COMPLETE event.

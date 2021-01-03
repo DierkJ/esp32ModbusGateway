@@ -78,6 +78,7 @@ extern String g_devicename ;
 #include "display.h"
 #include "modbus.h"
 #include "ota.h"
+#include "sensors.h"
 
 #endif
 

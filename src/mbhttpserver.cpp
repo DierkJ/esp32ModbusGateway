@@ -125,8 +125,8 @@ void handleGetPowerMeter(AsyncWebServerRequest *request)
   root[F("power")] = g_modBusMeterData.fPower;
   root[F("reactive_power")] = g_modBusMeterData.fReactivePower;
   root[F("frequency")] = g_modBusMeterData.fFrequency;
-  root[F("energyout")] = g_modBusMeterData.fEnergyOut;
-  root[F("energyin")] = g_modBusMeterData.fEnergyIn;
+  root[F("energy_out")] = g_modBusMeterData.fEnergyOut;
+  root[F("energy_in")] = g_modBusMeterData.fEnergyIn;
   for (int i=0; i<3; i++)
   {
     char szBuf[32];
@@ -185,9 +185,39 @@ const char* PARAM_MESSAGE = "message";
 
 void StartHTTP(void) 
 {
+  ESP_LOGI(TAG, "starting HTTP Server... ");
+
+  //
+  // some checks for SPIFFS
+  //
+  File fp = SPIFFS.open("/index.html", "r");
+  if (!fp) 
+  {
+    ESP_LOGI(TAG, "Failed to open index.html for reading, HTTP Server not started");
+    return;
+  }
+  else 
+  {
+    ESP_LOGI(TAG, "index.html Size: %d", fp.size());
+  }
+  fp.close();
+
+  fp = SPIFFS.open("/src/jquery-3.3.1.min.js", "r");
+  if (!fp) 
+  {
+    ESP_LOGI(TAG, "Failed to open /src/jquery-3.3.1.min.js for reading, HTTP Server not started");
+    return;
+  }
+  else 
+  {
+    ESP_LOGI(TAG, "jQuery Size: %d", fp.size());
+  }
+  fp.close();
 
   // register not found
   g_server.onNotFound(handleNotFound);
+  
+/*
   g_server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
         request->send(200, "text/plain", "Hello, world");
     });
@@ -213,46 +243,44 @@ void StartHTTP(void)
         }
         request->send(200, "text/plain", "Hello, POST: " + message);
     });
+*/
 
 
-  /*
-  g_server.on("/index", HTTP_GET, [](AsyncWebServerRequest *request){
+  g_server.on("/html", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/index.html", "text/html");
   });
 
-  g_server.on("/src/bootstrap.bundle.min.js", HTTP_GET, [](AsyncWebServerRequest *request)
+
+  g_server.on("/src/jquery-3.3.1.min.js", HTTP_GET, [](AsyncWebServerRequest *request)
   {
-    request->send(SPIFFS, "/src/bootstrap.bundle.min.js", "text/javascript");
-  });
- 
-  g_server.on("/src/jquery-3.3.1.min.js", HTTP_GET, [](AsyncWebServerRequest *request){
+    ESP_LOGI(TAG, "on jQuery");
     request->send(SPIFFS, "/src/jquery-3.3.1.min.js", "text/javascript");
   });
- 
-  g_server.on("/src/bootstrap.min.css", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/src/bootstrap.min.css", "text/css");
-  });
- 
-*/
+
 
   // GET
   g_server.on("/api/status", HTTP_GET, handleGetStatus);
   g_server.on("/api/meter", HTTP_GET, handleGetPowerMeter);
 
+/*
   // POST
   g_server.on("/update", HTTP_POST, handleUpdate );
   g_server.on("/setup", HTTP_POST, handleSetup );
+*/
 
   // make sure config.json is not served!
-  g_server.on("/config.json", HTTP_GET, [](AsyncWebServerRequest *request) {
+  g_server.on("/config.json", HTTP_GET, [](AsyncWebServerRequest *request) 
+  {
     request->send(400);
   });
+
 /*
   // catch-all
   g_server.serveStatic("/", SPIFFS, "/", CACHE_HEADER).setDefaultFile("index.html");
 */
 
+
   g_server.begin();
-  ESP_LOGI(TAG, "Bootstrap server started... ");
+  ESP_LOGI(TAG, "HTTP server started... ");
 
 }

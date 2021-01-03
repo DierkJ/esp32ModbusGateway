@@ -81,12 +81,34 @@ void setup()
   dp_init(true);
   ESP_LOGI(TAG, "Display init");
 
+#if (0)
+  //
+  // digital io test
+  //
+  pinMode(17, OUTPUT);
+
+  for (int ii=0; ii<10; ii++)
+  {
+    digitalWrite(17, HIGH);
+    delay(50);
+    digitalWrite(17, LOW);
+    delay(50);
+  }
+  ESP_LOGI(TAG, "DigiTest done");
+#endif
+
   // Open SPI FF
-  if(!SPIFFS.begin())
+  if(SPIFFS.begin())
+  {
+    // Checks moved to http module
+  }
+  else
   {
      ESP_LOGI(TAG, "An Error has occurred while mounting SPIFFS");
      return;
   }
+
+
 
   bool res;
 
@@ -135,7 +157,8 @@ void setup()
         StartModBus();
         StartHTTP();
         otaInit();
-        loraInit();
+        StartSensors();
+//        loraInit();
     }
 }
 
@@ -151,7 +174,8 @@ void loop()
 
   otaHandle();
   ModBusHandle();
-  loraHandle();
+  SensorsHandle();
+//  loraHandle();
  
   if ((millis() - _tsMillis) > 1000L)
   {

@@ -229,6 +229,10 @@ void handleError(Error error, uint32_t token)
   ESP_LOGI(TAG, "Error response: %02X - %s", (int)me, (const char *)me);
   g_modBusMeterData.iErrCnt++;
   g_modBusMeterData.iLastErr = error;
+  
+  // reset connected status
+  g_modBusMeterData.fConnected = false;
+  
 }
 
 Error FireConnectRequest(void)
@@ -263,6 +267,7 @@ void StartModBus(modbus_meter_type_t dt, uint16_t devadr, uint32_t baudrate)
 
     // Set up Serial2 connected to Modbus RTU
     // ttgo lora pins for Serial2 => RX pin 35, TX pin 13, pin 17: RTS (Rx/Tx switch)
+    pinMode(17, OUTPUT);
     Serial2.begin(modBusConfig.iBaudrate, SERIAL_8N1, 35, 13);
 
     // Set up ModbusRTU client.

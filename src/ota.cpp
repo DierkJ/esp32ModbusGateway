@@ -36,13 +36,7 @@ static const char TAG[] = __FILE__;
 
 #include <ArduinoOTA.h>
 
-#ifdef OTA_IAS
 
-#define MODEBUTTON 0
-#include <IOTAppStory.h>		            // IOTAppStory.com library
-IOTAppStory IAS(COMPDATE, MODEBUTTON);	// Initialize IotAppStory
-
-#endif
 
 
 /*
@@ -142,58 +136,6 @@ void otaInit()
 
 #endif
 
-#ifdef OTA_IAS
-  IAS.preSetDeviceName(g_devicename);                       // preset deviceName this is also your MDNS responder: http://'g_devicename'.local
-  //IAS.preSetAutoUpdate(false);                            // automaticUpdate (true, false)
-  //IAS.preSetAutoConfig(false);                            // automaticConfig (true, false)
-  
-  IAS.onModeButtonShortPress([]() {
-    ESP_LOGI(TAG," If mode button is released, I will enter in firmware update mode.");
-  });
-
-  IAS.onModeButtonLongPress([]() {
-    ESP_LOGI(TAG," If mode button is released, I will enter in configuration mode.");
-  });
-
-  IAS.onModeButtonVeryLongPress([]() {
-    ESP_LOGI(TAG," If mode button is released, I will enter in ??? mode.");
-  });
-
-  IAS.onFirmwareUpdateProgress([](int written, int total)
-  {
-    otaDisplayProgress(written, total);
-  });
-  
-  IAS.onModeButtonNoPress([]() {
-    ESP_LOGI(TAG," Mode button is not pressed");
-  });
-  
-  IAS.onFirstBoot([]() {                              
-    ESP_LOGI(TAG,"onFirstBoot");
-  });
-
-  IAS.onFirmwareUpdateCheck([]() {
-    ESP_LOGI(TAG,"Checking if there is a firmware update available.");
-  });
-
-  IAS.onFirmwareUpdateDownload([]() {
-    ESP_LOGI(TAG,"Downloading and Installing firmware update.");
-    otaDisplayStart();
-  });
-
-  IAS.onFirmwareUpdateError([]() {
-    ESP_LOGI(TAG,"pdate failed...Check your logs");
-    otaDisplayError(55, NULL);
-  });
-
-  IAS.onConfigMode([]() {
-    ESP_LOGI(TAG,"Starting configuration mode. Search for my WiFi and connect to 192.168.4.1.");
-  });
-   
-  IAS.begin();                                   // Run IOTAppStory
-  IAS.setCallHomeInterval(120);                  // Call home interval in seconds(disabled by default), 0 = off, use 60s only for development. Please change it to at least 2 hours in production
-
-#endif
 
 }
 
@@ -202,13 +144,6 @@ void otaHandle()
 
 #ifdef OTA_SERVER
     ArduinoOTA.handle();
-#endif
-
-#ifdef OTA_IAS
-  IAS.loop();   // this routine handles the calling home functionality,
-                // reaction of the MODEBUTTON pin. If short press (<4 sec): update of sketch, long press (>7 sec): Configuration
-                // reconnecting WiFi when the connection is lost,
-                // and setting the internal clock (ESP8266 for BearSSL)
 #endif
 
 
