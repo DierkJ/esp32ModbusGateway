@@ -26,10 +26,8 @@
 
 #define DISPLAYREFRESH_MS               40      // OLED refresh cycle in ms [default = 40] -> 1000/40 = 25 frames per second
 #define DISPLAYCONTRAST                 80      // 0 .. 255, OLED display contrast [default = 80]
-#define DISPLAYCYCLE                    3       // Auto page flip delay in sec [default = 2] for devices without button
+#define DISPLAYCYCLE                    5       // Auto page flip delay in sec [default = 2] for devices without button
 #define HOMECYCLE                       30      // house keeping cycle in seconds [default = 30 secs]
-
-#define DISPLAY_PAGES (7) // number of display pages
 
 // settings for display library
 #define USE_BACKBUFFER 1
@@ -107,13 +105,24 @@
 #define MY_DISPLAY_BGCOLOR Black
 #endif
 
-extern uint8_t DisplayIsOn, displaybuf[];
+enum dp_page_t 
+{
+    DP_PAGE_HOME = 0,
+    DP_PAGE_METER = 1,
+    DP_PAGE_SENSOR = 2, 
+    DP_PAGE_TTN = 3,
+    DP_PAGE_INTERNAL = 4,
+    DP_PAGE_LAST = DP_PAGE_INTERNAL
+} ;
+
+extern uint8_t displaybuf[];
 
 void dp_setup(int contrast = 0);
-void dp_refresh(bool nextPage = false);
 void dp_init(bool verbose = false);
 void dp_shutdown(void);
-void dp_drawPage(time_t t, bool nextpage);
+void dp_handle(void);
+void dp_drawPage(dp_page_t dp);
+
 void dp_printf(uint16_t x, uint16_t y, uint8_t font, uint8_t inv,
                const char *format, ...);
 void dp_dump(uint8_t *pBuffer);

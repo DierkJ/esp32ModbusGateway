@@ -272,8 +272,9 @@ void loraInit()
       return;
     }
 
-    os_init_ex(pPinMap);
-
+    int iRet = os_init_ex(pPinMap);
+    ESP_LOGI(TAG, "Lora Init returns: %d", iRet);
+    
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
 

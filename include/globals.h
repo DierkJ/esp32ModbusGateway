@@ -38,7 +38,6 @@
 
 #define PANIC(...) abort()
 
-
 // I2C bus access control
 #define I2C_MUTEX_LOCK()                                                       \
   (xSemaphoreTake(I2Caccess, pdMS_TO_TICKS(DISPLAYREFRESH_MS)) == pdTRUE)
@@ -71,6 +70,9 @@ typedef struct {
 
 extern SemaphoreHandle_t I2Caccess;
 extern String g_devicename ;
+extern String g_ipAddress ;
+extern String g_ipSubNet ;
+extern String g_SSID ;
 
 
 // application includes

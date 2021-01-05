@@ -29,6 +29,7 @@ static const char TAG[] = __FILE__;
 #include "sensors.h"
 
 #define SEALEVELPRESSURE_HPA (1013.25)
+#define SENSORCYCLE          (8)       // read env. data every x s
 
 
 /**
@@ -51,11 +52,17 @@ void StartSensors(void)
 
     // Set up oversampling and filter initialization
     I2C_MUTEX_LOCK();
-    bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_2X);
-    bmp.setPressureOversampling(BMP3_OVERSAMPLING_32X);
-    bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_127);
-    bool bOk = bmp.performReading();
+
+    bool bOk = bmp.begin_I2C();
+    if (bOk) 
+    {
+        bmp.setTemperatureOversampling(BMP3_OVERSAMPLING_2X);
+        bmp.setPressureOversampling(BMP3_OVERSAMPLING_32X);
+        bmp.setIIRFilterCoeff(BMP3_IIR_FILTER_COEFF_127);
+        bOk = bmp.performReading();
+    }
     I2C_MUTEX_UNLOCK();
+    
     if (! bOk)
     {
         ESP_LOGI(TAG,"Failed to read from BMP388");
@@ -77,7 +84,7 @@ void SensorsHandle(void)
 {
     //ESP_LOGI(TAG, "inside sensorsHandle with %d / %d", millis(), _tmMillis);
     
-    if ((millis() - _tmMillis) > 1000L)
+    if ((millis() - _tmMillis) > SENSORCYCLE * 1000L)
     {
         ESP_LOGI(TAG, "inside sensorsHandle with %d", _tmMillis);
         
@@ -88,12 +95,12 @@ void SensorsHandle(void)
         }
         else
         {
-            g_SensorData.temperature = bmp.temperature;
-            g_SensorData.pressure = bmp.pressure;
+            g_SensorData.temperature = bmp.temperature;     // °C
+            g_SensorData.pressure = bmp.pressure/100.0;     // hPa
             g_SensorData.altitude = bmp.readAltitude(SEALEVELPRESSURE_HPA);
+            ESP_LOGI(TAG, "temp: %f °C, pressure: %f hPa", g_SensorData.temperature, g_SensorData.pressure);
         }
         I2C_MUTEX_UNLOCK();
-        ESP_LOGI(TAG, "temp: %f °C, pressure: %f hPa", g_SensorData.temperature, g_SensorData.pressure);
         _tmMillis = millis();
     }
 } 

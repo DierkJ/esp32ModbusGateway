@@ -27,6 +27,7 @@ static const char TAG[] = __FILE__;
 #include "modbus.h"
 #include "lorawan.h"
 #include "mbhttpserver.h"
+#include "i2c.h"
 
 
 #define NTP_SERVER "de.pool.ntp.org"
@@ -34,6 +35,9 @@ static const char TAG[] = __FILE__;
 
 SemaphoreHandle_t I2Caccess;
 String g_devicename = "HahisMBGW01";
+String g_ipAddress ;
+String g_ipSubNet;
+String g_SSID;
 
 void setup() 
 {
@@ -77,25 +81,14 @@ void setup()
 
   delay(100);
 
+  // open i2c bus
+  i2c_init();
  
   dp_init(true);
   ESP_LOGI(TAG, "Display init");
 
-#if (0)
-  //
-  // digital io test
-  //
-  pinMode(17, OUTPUT);
-
-  for (int ii=0; ii<10; ii++)
-  {
-    digitalWrite(17, HIGH);
-    delay(50);
-    digitalWrite(17, LOW);
-    delay(50);
-  }
-  ESP_LOGI(TAG, "DigiTest done");
-#endif
+  // scan i2c bus for devices
+  i2c_scan();
 
   // Open SPI FF
   if(SPIFFS.begin())
@@ -140,25 +133,21 @@ void setup()
         //if you get here you have connected to the WiFi    
         ESP_LOGI(TAG, "connected...yeey :)");
     
-        String sIP = WiFi.localIP().toString();
-        const char *pS = sIP.c_str();
-        ESP_LOGI(TAG, "IP-Adress: %s", pS);
-        dp_printf(0, 5, FONT_SMALL, 0, "IP: %s", pS);
+        g_ipAddress = WiFi.localIP().toString();
+        g_ipSubNet = WiFi.subnetMask().toString();
+        g_SSID = WiFi.SSID();
 
         struct tm local;
         configTzTime(TZ_INFO, NTP_SERVER); // ESP32 Systemzeit mit NTP Synchronisieren
         getLocalTime(&local, 10000); 
-        
         ESP_LOGI(TAG, "Time: %2.2d:%2.2d:%2.2d", local.tm_hour, local.tm_min, local.tm_sec);
-        dp_printf(0, 6, FONT_SMALL, 0, "Time: %2.2d:%2.2d:%2.2d", local.tm_hour, local.tm_min, local.tm_sec);
-        dp_dump(displaybuf);
 
-        delay(1000);
         StartModBus();
         StartHTTP();
         otaInit();
         StartSensors();
-//        loraInit();
+        loraInit();
+        dp_drawPage(DP_PAGE_HOME);
     }
 }
 
@@ -171,22 +160,15 @@ static long _loopMillis = 0;
 
 void loop() 
 {
-
+  dp_handle();
   otaHandle();
   ModBusHandle();
   SensorsHandle();
-//  loraHandle();
+  loraHandle();
  
   if ((millis() - _tsMillis) > 1000L)
   {
-    // update time
-    struct tm local;
-    getLocalTime(&local, 10000); 
 
-    dp_printf(0, 6, FONT_SMALL, 0, "Time: %2.2d:%2.2d:%2.2d ", local.tm_hour, local.tm_min, local.tm_sec);
-    dp_dump(displaybuf);
-
-  
     if (g_minFreeHeap != _minFreeHeap || ESP.getFreeHeap() != _freeHeap) 
     {
       _freeHeap = ESP.getFreeHeap();

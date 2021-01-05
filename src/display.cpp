@@ -25,6 +25,8 @@
 #include "display.h"
 #include "i2c.h"
 
+
+
 static const char TAG[] = __FILE__;
 
 // helper array for converting month values to text
@@ -36,9 +38,23 @@ static uint8_t plotbuf[MY_DISPLAY_WIDTH * MY_DISPLAY_HEIGHT / 8] = {0};
 
 SSOLED ssoled;
 
+/*
+ * All display printing / Grafics / etc. is done here in this module
+ * The different worker modules are exporting the relevant data to be displayed.
+ * 
+ * the Display has following pages:
+ * 1: (Home) Logo / IP Adress
+ * 2: Meter Data
+ * 3: Sensor Data
+ * 4: TTN Data
+ * 5: internal data
+ */  
+
+
+static dp_page_t curDisplayPage;
+
 /**
  * @brief basic OLED display setup
- * 
  * @param contrast 0..100% (not used)
  */
 void dp_setup(int contrast) 
@@ -82,18 +98,14 @@ void dp_init(bool verbose)
 // show chip information
       esp_chip_info_t chip_info;
       esp_chip_info(&chip_info);
-      dp_printf(0, 0, 0, 0, "** Hahis ModBus **");
+      dp_printf(0, 0, 0, 0, "** ModBus Gateway **");
       dp_printf(0, 1, 0, 0, "Software v%s", PROGVERSION);
       dp_printf(0, 3, 0, 0, "ESP32 %d cores", chip_info.cores);
       dp_printf(0, 4, 0, 0, "Chip Rev.%d", chip_info.revision);
       dp_printf(0, 5, 0, 0, "WiFi%s%s",
                 (chip_info.features & CHIP_FEATURE_BT) ? "/BT" : "",
                 (chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
- //     dp_printf(0, 6, 0, 0, "%dMB %s Flash",
- //               spi_flash_get_chip_size() / (1024 * 1024),
- //               (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "int."
- //                                                             : "ext.");
-
+ 
       // give user some time to read or take picture
       dp_dump(displaybuf);
       delay(2000);
@@ -107,85 +119,90 @@ void dp_init(bool verbose)
     dp_printf(0, 6, FONT_SMALL, 0, "AP: 192.168.4.1");
     dp_dump(displaybuf);
 
-    delay (2000);
+    delay (1000);
     dp_power(DisplayIsOn); // set display off if disabled
 
     I2C_MUTEX_UNLOCK(); // release i2c bus access mutex
-  }                     
-} // dp_init
+  }     
+  curDisplayPage = DP_PAGE_HOME;                
+} 
 
-void dp_refresh(bool nextPage) 
+static long _dpMillis = 0L;
+
+void dp_handle(void)
 {
+  if ((millis() - _dpMillis) > DISPLAYCYCLE * 1000L)
+  {
+    curDisplayPage = (dp_page_t) (curDisplayPage + 1);
+    if (curDisplayPage > DP_PAGE_LAST)
+      curDisplayPage = DP_PAGE_HOME;
+    dp_drawPage (curDisplayPage);
+    _dpMillis = millis();
+  }
+}
 
-#ifndef HAS_BUTTON
-  static uint32_t framecounter = 0;
-#endif
-
-// if display is switched off we don't refresh it to relax cpu
-//  if (!DisplayIsOn && (DisplayIsOn == cfg.screenon))
-//    return;
-
- const time_t t = 0;
-      
-  // block i2c bus access
+void dp_drawPage(dp_page_t dp) 
+{
   if (!I2C_MUTEX_LOCK())
     ESP_LOGV(TAG, "[%0.3f] i2c mutex lock failed", millis() / 1000.0);
   else 
   {
-
-#ifndef HAS_BUTTON
-    // auto flip page if we are in unattended mode
-    if ((++framecounter) > (DISPLAYCYCLE * 1000 / DISPLAYREFRESH_MS)) {
-      framecounter = 0;
-      nextPage = true;
-    }
-#endif
-
-    dp_drawPage(t, nextPage);
-    dp_dump(displaybuf);
-
-    I2C_MUTEX_UNLOCK(); // release i2c bus access
-
-  } // mutex
-} // refreshDisplay()
-
-void dp_drawPage(time_t t, bool nextpage) 
-{
-
-  // write display content to display buffer
-  // nextpage = true -> flip 1 page
-
-  static uint8_t DisplayPage = 0;
-
-  // line 1/2: pax counter
-  dp_printf(0, 0, FONT_STRETCHED, 0, "ModBus");
- 
-start:
-
-  if (nextpage) 
-  {
-    DisplayPage = (DisplayPage >= DISPLAY_PAGES - 1) ? 0 : (DisplayPage + 1);
     dp_clear();
+    memset(displaybuf, 0, sizeof(displaybuf));
+    
+    switch(dp)
+    {
+      case DP_PAGE_HOME:
+        dp_printf(0, 0, FONT_NORMAL, 0, "ModBus Gateway" );
+        dp_printf(0, 3, FONT_SMALL, 0, "IP:   %s", g_ipAddress.c_str() );
+        dp_printf(0, 4, FONT_SMALL, 0, "Mask: %s", g_ipSubNet.c_str() );
+        dp_printf(0, 5, FONT_SMALL, 0, "SSID: %s", g_SSID );
+        dp_printf(0, 6, FONT_SMALL, 0, "DNS:  %s", g_devicename.c_str() );
+
+        break;
+
+      case DP_PAGE_METER:
+        dp_printf(0, 0, FONT_NORMAL, 0, "Power Meter" );
+        if (g_modBusMeterData.fConnected)
+        {
+          dp_printf(0, 3, FONT_SMALL, 0, "Power:   %.3f kW", g_modBusMeterData.fPower);
+          dp_printf(0, 4, FONT_SMALL, 0, "In:      %.1f kWh", g_modBusMeterData.fEnergyIn );
+          dp_printf(0, 5, FONT_SMALL, 0, "Out:     %.1f kWh", g_modBusMeterData.fEnergyOut );
+          dp_printf(0, 6, FONT_SMALL, 0, "Line:    %.1f V", g_modBusMeterData.fVoltage );
+        }
+        else
+          dp_printf(0, 4, FONT_SMALL, 0, "not connected" );
+        break;
+
+      case DP_PAGE_SENSOR:
+        dp_printf(0, 0, FONT_NORMAL, 0, "Environment" );
+        dp_printf(0, 3, FONT_SMALL, 0, "Temp:     %.1f C", g_SensorData.temperature);
+        dp_printf(0, 4, FONT_SMALL, 0, "Pressure: %.1f hPa", g_SensorData.pressure );
+        dp_printf(0, 5, FONT_SMALL, 0, "Alti:     %.1f m", g_SensorData.altitude );
+        break;
+
+      case DP_PAGE_TTN:
+        dp_printf(0, 0, FONT_NORMAL, 0, "TTN" );
+        dp_printf(0, 3, FONT_SMALL, 0, "Todo...");
+        break;
+
+      case DP_PAGE_INTERNAL:
+        dp_printf(0, 0, FONT_NORMAL, 0, "Internal" );
+        dp_printf(0, 3, FONT_SMALL, 0, "Uptime:    %d", millis());
+        dp_printf(0, 4, FONT_SMALL, 0, "free Heap: %d", g_minFreeHeap);
+        dp_printf(0, 5, FONT_SMALL, 0, "Version:   V%s", PROGVERSION);
+        //dp_printf(0, 6, FONT_SMALL, 0, "Last Acc:  %d", g_lastAccessTime);
+        break;
+    }
+    // 
+    struct tm local;
+    getLocalTime(&local, 10000); 
+    dp_printf(128-(7*8), 7, FONT_SMALL, 0, "%2.2d:%2.2d:%2.2d ", local.tm_hour, local.tm_min, local.tm_sec);
+    dp_dump(displaybuf);
   }
 
-  switch (DisplayPage) 
-  {
-
-    // page 0: parameters overview
-    // ...
-    // page N: blank screen
-
-    // page 0: parameters overview
-  case 0:
-    DisplayPage++; // next page
-    break;
-
-  default:
-    goto start; // start over
-
-  } // switch
-
-} // dp_drawPage
+  I2C_MUTEX_UNLOCK(); // release i2c bus access mutex
+} 
 
 // display helper functions
 void dp_printf(uint16_t x, uint16_t y, uint8_t font, uint8_t inv,

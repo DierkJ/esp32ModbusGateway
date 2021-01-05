@@ -40,6 +40,8 @@ static modbus_config_t modBusConfig;
 //pins for Serial2 => RX pin 35, TX pin 13, pin 17: RTS (Rx/Tx switch)
 ModbusClientRTU MB(Serial2, 17); 
 
+#define MODBUSCYCLE          (10)       // read meter data every x s
+
 // some tokens..
 #define TOK_START   0x4711
 #define TOK_FINAL   0x10000000L
@@ -48,7 +50,7 @@ ModbusClientRTU MB(Serial2, 17);
 //
 // device decoder
 //
-static const char *Device2Text(modbus_meter_type_t mt)
+const char *Device2Text(modbus_meter_type_t mt)
 {
     switch (mt)
     {
@@ -300,7 +302,7 @@ void ModBusHandle(void)
 {
     //ESP_LOGI(TAG, "inside ModBusHandle with %d / %d", millis(), _tmMillis);
     
-    if ((millis() - _tmMillis) > 10000L)
+    if ((millis() - _tmMillis) > MODBUSCYCLE * 1000L)
     {
         ESP_LOGI(TAG, "inside ModBusHandle with %d", _tmMillis);
 

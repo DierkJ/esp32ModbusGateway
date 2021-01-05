@@ -64,6 +64,7 @@ typedef struct {
     uint32_t iBaudrate;                 // baudrate
 } modbus_config_t;
 
+extern const char *Device2Text(modbus_meter_type_t mt);
 extern void StartModBus(modbus_meter_type_t dt = MT_SDM630, uint16_t devadr = 1, uint32_t baudrate = 9600);
 extern void ModBusHandle(void);
 
