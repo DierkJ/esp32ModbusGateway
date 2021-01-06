@@ -8,14 +8,27 @@
 * @date:	20201129 16:01:24 
 * @version:	1.0
 *
-* @copyright:	(c) 2020 Team HAHIS
+* @copyright:	(c) 2021 Team HAHIS
 *
-* The reproduction, distribution and utilization of this document
-* as well as the communication of its content to others without
-* express authorization is prohibited. Offenders will be held liable
-* for the payment of damages. All rights reserved in the event of
-* the grant of a patent, utility model or design
-* Refer to protection notice ISO 16016
+* MIT License
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
 *
 **********************************************************************************************************************************************************************************************************************************
 **/
@@ -61,7 +74,7 @@ String getIP()
  */
 void handleNotFound(AsyncWebServerRequest *request)
 {
-  ESP_LOGI(TAG, "file not found %s", request->url().c_str());
+  debugD("file not found %s", request->url().c_str());
   request->send(404, F(CONTENT_TYPE_PLAIN), F("File not found"));
 }
 
@@ -70,10 +83,10 @@ void handleNotFound(AsyncWebServerRequest *request)
  */
 void handleGetStatus(AsyncWebServerRequest *request)
 {
-  ESP_LOGI(TAG, "%s (%d args)", request->url().c_str(), request->params());
+  debugD("%s (%d args)", request->url().c_str(), request->params());
 
   AsyncJsonResponse * response = new AsyncJsonResponse();
-  response->addHeader("Server","ESP Async Web Server");
+  response->addHeader("Server","Modbus Gateway");
   JsonObject root = response->getRoot();
 
   if (request->hasParam("initial")) 
@@ -112,10 +125,10 @@ void handleGetStatus(AsyncWebServerRequest *request)
  */
 void handleGetPowerMeter(AsyncWebServerRequest *request)
 {
-  ESP_LOGI(TAG, "%s (%d args)", request->url().c_str(), request->params());
+  debugD("%s (%d args)", request->url().c_str(), request->params());
 
   AsyncJsonResponse * response = new AsyncJsonResponse();
-  response->addHeader("Server","ESP Async Web Server");
+  response->addHeader("Server","Modbus Gateway");
   JsonObject root = response->getRoot();
 
   root[F("connected")] = g_modBusMeterData.fConnected;
@@ -144,22 +157,45 @@ void handleGetPowerMeter(AsyncWebServerRequest *request)
   request->send(response);
 }
 
+/**
+ * Sensor JSON api
+ */
+void handleGetSensor(AsyncWebServerRequest *request)
+{
+  debugD("%s (%d args)", request->url().c_str(), request->params());
+
+  AsyncJsonResponse * response = new AsyncJsonResponse();
+  response->addHeader("Server","Modbus Gateway");
+  JsonObject root = response->getRoot();
+
+  root[F("temperature")] = g_SensorData.temperature;
+  root[F("pressure")] = g_SensorData.pressure;
+  root[F("altitude")] = g_SensorData.altitude;
+
+  g_lastAccessTime = millis();
+
+  response->setLength();
+  request->send(response);
+}
+
+
+
 
 /**
  * Handle Update.
  */
 void handleUpdate(AsyncWebServerRequest *request)
 {
-  ESP_LOGI(TAG, "handleUpdate: %s (%d args)", request->url().c_str(), request->params());
+  debugD("handleUpdate: %s (%d args)", request->url().c_str(), request->params());
 
   String resp = F("<!DOCTYPE html><html><head><meta http-equiv=\"refresh\" content=\"5; url=/\"></head><body>");
   int result = 400;
 
   if (request->hasParam("Update"))
-    ESP_LOGI(TAG, "Update");
+    debugD("Update");
   else
   {
-    ESP_LOGI(TAG, "other Button:" );
+    debugD("other Button:" );
   }
   resp += F("<h1>Updateed.</h1>");
   resp += F("</body></html>");
@@ -171,13 +207,13 @@ void handleUpdate(AsyncWebServerRequest *request)
  */
 void handleSetup(AsyncWebServerRequest *request)
 {
-    ESP_LOGI(TAG, "handleSetup: %s (%d args)", request->url().c_str(), request->params());
+    debugD("handleSetup: %s (%d args)", request->url().c_str(), request->params());
 
   if (request->hasParam("Update"))
-    ESP_LOGI(TAG, "Update");
+    debugD("Update");
   else
   {
-    ESP_LOGI(TAG, "other Button:" );
+    debugD("other Button:" );
   }
 }
 
@@ -185,7 +221,7 @@ const char* PARAM_MESSAGE = "message";
 
 void StartHTTP(void) 
 {
-  ESP_LOGI(TAG, "starting HTTP Server... ");
+  debugD("starting HTTP Server... ");
 
   //
   // some checks for SPIFFS
@@ -193,24 +229,24 @@ void StartHTTP(void)
   File fp = SPIFFS.open("/index.html", "r");
   if (!fp) 
   {
-    ESP_LOGI(TAG, "Failed to open index.html for reading, HTTP Server not started");
+    debugD("Failed to open index.html for reading, HTTP Server not started");
     return;
   }
   else 
   {
-    ESP_LOGI(TAG, "index.html Size: %d", fp.size());
+    debugD("index.html Size: %d", fp.size());
   }
   fp.close();
 
   fp = SPIFFS.open("/src/jquery-3.3.1.min.js", "r");
   if (!fp) 
   {
-    ESP_LOGI(TAG, "Failed to open /src/jquery-3.3.1.min.js for reading, HTTP Server not started");
+    debugD("Failed to open /src/jquery-3.3.1.min.js for reading, HTTP Server not started");
     return;
   }
   else 
   {
-    ESP_LOGI(TAG, "jQuery Size: %d", fp.size());
+    debugD("jQuery Size: %d", fp.size());
   }
   fp.close();
 
@@ -253,7 +289,7 @@ void StartHTTP(void)
 
   g_server.on("/src/jquery-3.3.1.min.js", HTTP_GET, [](AsyncWebServerRequest *request)
   {
-    ESP_LOGI(TAG, "on jQuery");
+    debugD("on jQuery");
     request->send(SPIFFS, "/src/jquery-3.3.1.min.js", "text/javascript");
   });
 
@@ -261,6 +297,7 @@ void StartHTTP(void)
   // GET
   g_server.on("/api/status", HTTP_GET, handleGetStatus);
   g_server.on("/api/meter", HTTP_GET, handleGetPowerMeter);
+  g_server.on("/api/sensor", HTTP_GET, handleGetSensor);
 
 /*
   // POST
@@ -274,13 +311,10 @@ void StartHTTP(void)
     request->send(400);
   });
 
-/*
   // catch-all
   g_server.serveStatic("/", SPIFFS, "/", CACHE_HEADER).setDefaultFile("index.html");
-*/
-
 
   g_server.begin();
-  ESP_LOGI(TAG, "HTTP server started... ");
+  debugD("HTTP server started... ");
 
 }

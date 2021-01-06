@@ -15,14 +15,27 @@
 * @date:	20201224 16:01:24 
 * @version:	1.0
 *
-* @copyright:	(c) 2020 Team HAHIS
+* @copyright:	(c) 2021 Team HAHIS
 *
-* The reproduction, distribution and utilization of this document
-* as well as the communication of its content to others without
-* express authorization is prohibited. Offenders will be held liable
-* for the payment of damages. All rights reserved in the event of
-* the grant of a patent, utility model or design
-* Refer to protection notice ISO 16016
+* MIT License
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
 *
 **********************************************************************************************************************************************************************************************************************************
 **/
@@ -36,16 +49,13 @@ static const char TAG[] = __FILE__;
 
 #include <ArduinoOTA.h>
 
-
-
-
 /*
 **  local status functions (oled / web)
 */
 void otaDisplayStart()
 {
     dp_clear();
-    dp_printf(0, 0, FONT_LARGE, 0, "OTA" );
+    dp_printf(0, 0, FONT_LARGE, 0, "*Update*" );
     dp_printf(0, 6, FONT_SMALL, 0, "Starting...");
     dp_dump(displaybuf);
 }
@@ -92,23 +102,23 @@ void otaInit()
 
   ArduinoOTA.onStart([]() 
   {
-    ESP_LOGI(TAG, "OTA_DIRECT: onStart");
+    debugD( "OTA_DIRECT: onStart");
     otaDisplayStart();
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) 
   {
-    ESP_LOGI(TAG, "OTA_DIRECT: onProgress: %d of %d", progress, total);
+    debugD( "OTA_DIRECT: onProgress: %d of %d", progress, total);
     otaDisplayProgress(progress, total);
   });
   ArduinoOTA.onEnd([]() 
   {
-    ESP_LOGI(TAG, "OTA_DIRECT: onEnd");
+    debugD( "OTA_DIRECT: onEnd");
     otaDisplayEnd();
   });
 
   ArduinoOTA.onError([](ota_error_t error) 
   {
-    ESP_LOGI(TAG, "OTA_DIRECT: onError: %d", error);
+    debugD( "OTA_DIRECT: onError: %d", error);
 
     switch (error)
     {

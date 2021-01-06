@@ -9,14 +9,27 @@
 * @date:	20201230 16:01:24 
 * @version:	1.0
 *
-* @copyright:	(c) 2020 Team HAHIS
+* @copyright:	(c) 2021 Team HAHIS
 *
-* The reproduction, distribution and utilization of this document
-* as well as the communication of its content to others without
-* express authorization is prohibited. Offenders will be held liable
-* for the payment of damages. All rights reserved in the event of
-* the grant of a patent, utility model or design
-* Refer to protection notice ISO 16016
+* MIT License
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
 *
 **********************************************************************************************************************************************************************************************************************************
 **/
@@ -34,10 +47,12 @@ static const char TAG[] = __FILE__;
 #include "lorawan.h"
 #include "loraconf.h"
 
-// Schedule TX every this many seconds (might become longer due to duty
-// cycle limitations).
+// Schedule TX every this many seconds (might become longer due to duty cycle limitations).
 const unsigned TX_INTERVAL = 60;
 static osjob_t sendjob;
+
+lora_status_t g_LoraData;
+
 
 // static TX Buffer
 static uint8_t bTxBuffer[32];
@@ -118,7 +133,7 @@ static void printKey(const char *name, const uint8_t *key, uint8_t len, bool lsb
     snprintf(keybyte, 3, "%02X", *p);
     strncat(keystring, keybyte, 2);
   }
-  ESP_LOGI(TAG, "%s: %s", name, keystring);
+  debugD( "%s: %s", name, keystring);
 }
 
 void showLoraKeys(void) 
@@ -140,7 +155,7 @@ void do_send(osjob_t* j)
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) 
     {
-        ESP_LOGI(TAG, "OP_TXRXPEND, not sending");
+        debugD( "OP_TXRXPEND, not sending");
     } 
     else 
     {
@@ -153,101 +168,107 @@ void do_send(osjob_t* j)
 
         // Prepare upstream data transmission at the next possible time.
         LMIC_setTxData2(1, bTxBuffer, 3*sizeof(float), 0);
-
-        ESP_LOGI(TAG, "Packet queued");
+        g_LoraData.nTX++;
+        debugD( "Packet queued");
     }
     // Next TX is scheduled after TX_COMPLETE event.
 }
 
-
+/**
+ * @brief Lora LMIC call back. 
+ * 
+ * @param ev type of event:  one of EV_xxx
+ */
 void onEvent (ev_t ev) 
 {
     switch(ev) 
     {
         case EV_SCAN_TIMEOUT:
-            ESP_LOGI(TAG, "EV_SCAN_TIMEOUT");
+            debugD( "EV_SCAN_TIMEOUT");
             break;
         case EV_BEACON_FOUND:
-            ESP_LOGI(TAG, "EV_BEACON_FOUND");
+            debugD( "EV_BEACON_FOUND");
             break;
         case EV_BEACON_MISSED:
-            ESP_LOGI(TAG, "EV_BEACON_MISSED");
+            debugD( "EV_BEACON_MISSED");
             break;
         case EV_BEACON_TRACKED:
-            ESP_LOGI(TAG, "EV_BEACON_TRACKED");
+            debugD( "EV_BEACON_TRACKED");
             break;
         case EV_JOINING:
-            ESP_LOGI(TAG, "EV_JOINING");
+            debugD( "EV_JOINING");
             break;
         case EV_JOINED:
-            ESP_LOGI(TAG, "EV_JOINED");
+            debugD( "EV_JOINED");
             {
-              u4_t netid = 0;
-              devaddr_t devaddr = 0;
-              u1_t nwkKey[16];
-              u1_t artKey[16];
- 
-              LMIC_getSessionKeys(&netid, &devaddr, nwkKey, artKey);
+              g_LoraData.fJoined = true;
+              LMIC_getSessionKeys(&g_LoraData.netid, &g_LoraData.devaddr, g_LoraData.nwkKey, g_LoraData.artKey);
 
-              ESP_LOGI(TAG, " netid: %d", netid);
-              ESP_LOGI(TAG, " devaddr: 0x%8.8x", devaddr);
-              printKey("AppSKey", artKey, 16, false);
-              printKey("NwkSKey", nwkKey, 16, true);
+              debugD( " netid: %d", g_LoraData.netid);
+              debugD( " devaddr: 0x%8.8x", g_LoraData.devaddr);
+              printKey("AppSKey", g_LoraData.artKey, 16, false);
+              printKey("NwkSKey", g_LoraData.nwkKey, 16, true);
             }
             // Disable link check validation (automatically enabled
             // during join, but because slow data rates change max TX
             // size, we don't use it in this example.
             LMIC_setLinkCheckMode(0);
+            
             break;
         case EV_JOIN_FAILED:
-            ESP_LOGI(TAG, "EV_JOIN_FAILED");
+            debugD( "EV_JOIN_FAILED");
             break;
         case EV_REJOIN_FAILED:
-            ESP_LOGI(TAG, "EV_REJOIN_FAILED");
+            debugD( "EV_REJOIN_FAILED");
             break;
             break;
         case EV_TXCOMPLETE:
-            ESP_LOGI(TAG, "EV_TXCOMPLETE (includes waiting for RX windows)");
+            debugD( "EV_TXCOMPLETE (includes waiting for RX windows)");
             if (LMIC.txrxFlags & TXRX_ACK)
-              ESP_LOGI(TAG, "Received ack");
+            {
+              g_LoraData.nAck++;
+              debugD( "Received ack");
+            }
             if (LMIC.dataLen) 
             {
-              ESP_LOGI(TAG, "Received %dbytes of payload", LMIC.dataLen);
+              // TODO:  RX dispatcher
+              debugD( "Received %dbytes of payload", LMIC.dataLen);
+              g_LoraData.nRX++;
             }
             // Schedule next transmission
             os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
             break;
         case EV_LOST_TSYNC:
-            ESP_LOGI(TAG, "EV_LOST_TSYNC");
+            debugD( "EV_LOST_TSYNC");
             break;
         case EV_RESET:
-            ESP_LOGI(TAG, "EV_RESET");
+            debugD( "EV_RESET");
             break;
         case EV_RXCOMPLETE:
             // data received in ping slot
-            ESP_LOGI(TAG, "EV_RXCOMPLETE");
+            debugD( "EV_RXCOMPLETE");
             break;
         case EV_LINK_DEAD:
-            ESP_LOGI(TAG, "EV_LINK_DEAD");
+            debugD( "EV_LINK_DEAD");
             break;
         case EV_LINK_ALIVE:
-            ESP_LOGI(TAG, "EV_LINK_ALIVE");
+            debugD( "EV_LINK_ALIVE");
             break;
         case EV_TXSTART:
-            ESP_LOGI(TAG, "EV_TXSTART");
+            debugD( "EV_TXSTART");
             break;
         case EV_TXCANCELED:
-            ESP_LOGI(TAG, "EV_TXCANCELED");
+            debugD( "EV_TXCANCELED");
             break;
         case EV_RXSTART:
             /* do not print anything -- it wrecks timing */
             break;
         case EV_JOIN_TXCOMPLETE:
-            ESP_LOGI(TAG, "EV_JOIN_TXCOMPLETE: no JoinAccept");
+            debugD( "EV_JOIN_TXCOMPLETE: no JoinAccept");
             break;
 
         default:
-            ESP_LOGI(TAG, "Unknown event: %d", (unsigned) ev);
+            debugD( "Unknown event: %d", (unsigned) ev);
             break;
     }
 }
@@ -259,8 +280,9 @@ void onEvent (ev_t ev)
  */
 void loraInit() 
 {
-    ESP_LOGI(TAG, "Starting LORA");
+    debugD( "Starting LORA");
 
+    memset(& g_LoraData, 0, sizeof(g_LoraData));
     //
     // LMIC init using always ttgo_lora32
     //
@@ -268,12 +290,12 @@ void loraInit()
 
     if (pPinMap == nullptr) 
     {
-      ESP_LOGI(TAG, "board not known to library; add pinmap or update getconfig_thisboard.cpp");
+      debugD( "board not known to library; add pinmap or update getconfig_thisboard.cpp");
       return;
     }
 
     int iRet = os_init_ex(pPinMap);
-    ESP_LOGI(TAG, "Lora Init returns: %d", iRet);
+    debugD( "Lora Init returns: %d", iRet);
     
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();

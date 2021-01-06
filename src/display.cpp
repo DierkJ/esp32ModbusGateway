@@ -8,14 +8,27 @@
 * @date:	20201129 11:29:27 Sunday
 * @version:	1.0
 *
-* @copyright:	(c) 2020 Team HAHIS
+* @copyright:	(c) 2021 Team HAHIS
 *
-* The reproduction, distribution and utilization of this document
-* as well as the communication of its content to others without
-* express authorization is prohibited. Offenders will be held liable
-* for the payment of damages. All rights reserved in the event of
-* the grant of a patent, utility model or design
-* Refer to protection notice ISO 16016
+* MIT License
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
 *
 **********************************************************************************************************************************************************************************************************************************
 **/
@@ -83,7 +96,7 @@ void dp_init(bool verbose)
 {
   // block i2c bus access
   if (!I2C_MUTEX_LOCK())
-    ESP_LOGV(TAG, "[%0.3f] i2c mutex lock failed", millis() / 1000.0);
+    ESP_LOGI(TAG, "[%0.3f] i2c mutex lock failed", millis() / 1000.0);
   else 
   {
 
@@ -144,7 +157,7 @@ void dp_handle(void)
 void dp_drawPage(dp_page_t dp) 
 {
   if (!I2C_MUTEX_LOCK())
-    ESP_LOGV(TAG, "[%0.3f] i2c mutex lock failed", millis() / 1000.0);
+    ESP_LOGI(TAG,  "[%0.3f] i2c mutex lock failed", millis() / 1000.0);
   else 
   {
     dp_clear();
@@ -183,7 +196,10 @@ void dp_drawPage(dp_page_t dp)
 
       case DP_PAGE_TTN:
         dp_printf(0, 0, FONT_NORMAL, 0, "TTN" );
-        dp_printf(0, 3, FONT_SMALL, 0, "Todo...");
+        dp_printf(0, 3, FONT_SMALL, 0, "NetID:    %d", g_LoraData.netid );
+        dp_printf(0, 4, FONT_SMALL, 0, "DevAddr:  0x%8.8x", g_LoraData.devaddr );
+        dp_printf(0, 5, FONT_SMALL, 0, "Tx  :     %d (%d)", g_LoraData.nTX, g_LoraData.nAck );
+        dp_printf(0, 6, FONT_SMALL, 0, "Rx  :     %d", g_LoraData.nRX );
         break;
 
       case DP_PAGE_INTERNAL:
@@ -259,7 +275,7 @@ void dp_shutdown(void)
 {
   // block i2c bus access
   if (!I2C_MUTEX_LOCK())
-    ESP_LOGV(TAG, "[%0.3f] i2c mutex lock failed", millis() / 1000.0);
+    ESP_LOGI(TAG, "[%0.3f] i2c mutex lock failed", millis() / 1000.0);
   else {
     oledPower(&ssoled, false);
     delay(DISPLAYREFRESH_MS / 1000 * 1.1);
@@ -386,3 +402,4 @@ void dp_progressbar(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uin
     uint16_t maxProgressWidth = (width-2) * progress / 100;
     dp_fillRect (x+1, y+1, maxProgressWidth, height-2, false);
 }
+

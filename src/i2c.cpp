@@ -8,14 +8,27 @@
 * @date:	20201129 09:52:12 Monday
 * @version:	1.0
 *
-* @copyright:	(c)2020 Team HAHIS
+* @copyright:	(c)2021 Team HAHIS
 *
-* The reproduction, distribution and utilization of this document
-* as well as the communication of its content to others without
-* express authorization is prohibited. Offenders will be held liable
-* for the payment of damages. All rights reserved in the event of
-* the grant of a patent, utility model or design
-* Refer to protection notice ISO 16016
+* MIT License
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
 *
 **********************************************************************************************************************************************************************************************************************************
 **/
@@ -46,7 +59,7 @@ int i2c_scan(void)
   int i2c_ret, addr;
   int devices = 0;
 
-  ESP_LOGI(TAG, "Starting I2C bus scan...");
+  debugD("Starting I2C bus scan...");
 
   // block i2c bus access
   if (I2C_MUTEX_LOCK()) {
@@ -67,26 +80,26 @@ int i2c_scan(void)
 
         case SSD1306_PRIMARY_ADDRESS:
         case SSD1306_SECONDARY_ADDRESS:
-          ESP_LOGI(TAG, "0x%X: SSD1306 Display controller", addr);
+          debugD("0x%X: SSD1306 Display controller", addr);
           break;
 
         case BME_PRIMARY_ADDRESS:
         case BME_SECONDARY_ADDRESS:
-          ESP_LOGI(TAG, "0x%X: Bosch BME MEMS", addr);
+          debugD("0x%X: Bosch BME MEMS", addr);
           break;
 
         case AXP192_PRIMARY_ADDRESS:
-          ESP_LOGI(TAG, "0x%X: AXP192 power management", addr);
+          debugD("0x%X: AXP192 power management", addr);
           break;
 
         default:
-          ESP_LOGI(TAG, "0x%X: Unknown device", addr);
+          debugD("0x%X: Unknown device", addr);
           break;
         }
       } // switch
     }   // for loop
 
-    ESP_LOGI(TAG, "I2C scan done, %u devices found.", devices);
+    debugD("I2C scan done, %u devices found.", devices);
 
     // Set back to 400KHz
     Wire.setClock(400000);
@@ -126,7 +139,7 @@ uint8_t i2c_readBytes(uint8_t addr, uint8_t reg, uint8_t *data, uint8_t len)
   } 
   else 
   {
-    ESP_LOGW(TAG, "[%0.3f] i2c mutex lock failed", millis() / 1000.0);
+    debugD("[%0.3f] i2c mutex lock failed", millis() / 1000.0);
     return 0xFF;
   }
 }
@@ -147,7 +160,7 @@ uint8_t i2c_writeBytes(uint8_t addr, uint8_t reg, uint8_t *data, uint8_t len)
     return ret ? ret : 0xFF;
   } else 
   {
-    ESP_LOGW(TAG, "[%0.3f] i2c mutex lock failed", millis() / 1000.0);
+    debugD("[%0.3f] i2c mutex lock failed", millis() / 1000.0);
     return 0xFF;
   }
 }

@@ -9,12 +9,25 @@
 *
 * @copyright:	(c) 2021 Team HAHIS
 *
-* The reproduction, distribution and utilization of this document
-* as well as the communication of its content to others without
-* express authorization is prohibited. Offenders will be held liable
-* for the payment of damages. All rights reserved in the event of
-* the grant of a patent, utility model or design
-* Refer to protection notice ISO 16016
+* MIT License
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* SOFTWARE.
 *
 **********************************************************************************************************************************************************************************************************************************
 **/
@@ -65,11 +78,11 @@ void StartSensors(void)
     
     if (! bOk)
     {
-        ESP_LOGI(TAG,"Failed to read from BMP388");
+        debugE("Failed to read from BMP388");
     }
     else
     {
-        ESP_LOGI(TAG, "BMP ready");
+        debugI( "BMP ready");
     }
 } 
 
@@ -82,23 +95,23 @@ static long _tmMillis = 0;
  */
 void SensorsHandle(void)
 {
-    //ESP_LOGI(TAG, "inside sensorsHandle with %d / %d", millis(), _tmMillis);
+    //debugD( "inside sensorsHandle with %d / %d", millis(), _tmMillis);
     
     if ((millis() - _tmMillis) > SENSORCYCLE * 1000L)
     {
-        ESP_LOGI(TAG, "inside sensorsHandle with %d", _tmMillis);
+        debugD( "inside sensorsHandle with %d", _tmMillis);
         
         I2C_MUTEX_LOCK();
         if (! bmp.performReading()) 
         {
-            ESP_LOGI(TAG,"Failed to read from BMP388");
+            debugE("Failed to read from BMP388");
         }
         else
         {
             g_SensorData.temperature = bmp.temperature;     // °C
             g_SensorData.pressure = bmp.pressure/100.0;     // hPa
             g_SensorData.altitude = bmp.readAltitude(SEALEVELPRESSURE_HPA);
-            ESP_LOGI(TAG, "temp: %f °C, pressure: %f hPa", g_SensorData.temperature, g_SensorData.pressure);
+            debugD( "temp: %f C, pressure: %f hPa", g_SensorData.temperature, g_SensorData.pressure);
         }
         I2C_MUTEX_UNLOCK();
         _tmMillis = millis();
