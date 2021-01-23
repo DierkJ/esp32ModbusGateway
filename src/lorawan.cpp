@@ -53,7 +53,6 @@ static osjob_t sendjob;
 
 lora_status_t g_LoraData;
 
-
 // static TX Buffer
 static uint8_t bTxBuffer[32];
 
@@ -164,7 +163,7 @@ void do_send(osjob_t* j)
         // later: TX queue
         *(float *) &bTxBuffer[0] = g_modBusMeterData.fEnergyIn;
         *(float *) &bTxBuffer[4] = g_modBusMeterData.fEnergyOut;
-        *(float *) &bTxBuffer[8] = g_modBusMeterData.fPower;
+        *(float *) &bTxBuffer[8] = g_modBusMeterData.fPhasePower[0];
 
         // Prepare upstream data transmission at the next possible time.
         LMIC_setTxData2(1, bTxBuffer, 3*sizeof(float), 0);

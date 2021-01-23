@@ -58,6 +58,41 @@ uint32_t g_lastAccessTime = 0;
 
 AsyncWebServer g_server(80);
 
+//
+// temp index html
+//
+const char index_html[] PROGMEM = "<!DOCTYPE html>\r\n"
+   "<html>\r\n"
+   " \r\n"
+   "    <head>\r\n"
+   "        <script src="
+   "\"src/jquery-3.3.1.m"
+   "in.js\"></script>\r"
+   "\n"
+   "        <script>\r\n"
+   "            function"
+   " hide() {\r\n"
+   "                $(\""
+   "#paragraph\").hide(2"
+   "000);\r\n"
+   "            }\r\n"
+   "        </script>\r"
+   "\n"
+   "    </head>\r\n"
+   " \r\n"
+   "    <body>\r\n"
+   " \r\n"
+   "        <p id=\"para"
+   "graph\">Text to be h"
+   "idden</p>\r\n"
+   "        <button oncl"
+   "ick=\"hide()\">Hide<"
+   "/button>\r\n"
+   " \r\n"
+   "    </body>\r\n"
+   "</html>";
+
+
 void requestRestart()
 {
   g_restartTime = millis() + 100;
@@ -109,8 +144,7 @@ void handleGetStatus(AsyncWebServerRequest *request)
   root[F("heap")] = heap;
   root[F("minheap")] = g_minFreeHeap;
   root[F("lastaccess")] = g_lastAccessTime;
-//  root[F("resetcode")] = getResetReason(0);
-//  root[F("gpio")] = (uint32_t)(((GPI | GPO) & 0xFFFF) | ((GP16I & 0x01) << 16));
+  root[F("resetcode")] = getResetReason(0);
 
   // reset free heap
   g_minFreeHeap = heap;
@@ -133,20 +167,23 @@ void handleGetPowerMeter(AsyncWebServerRequest *request)
 
   root[F("connected")] = g_modBusMeterData.fConnected;
 
-  root[F("voltage")] = g_modBusMeterData.fVoltage;
-  root[F("current")] = g_modBusMeterData.fCurrent;
-  root[F("power")] = g_modBusMeterData.fPower;
-  root[F("reactive_power")] = g_modBusMeterData.fReactivePower;
   root[F("frequency")] = g_modBusMeterData.fFrequency;
   root[F("energy_out")] = g_modBusMeterData.fEnergyOut;
   root[F("energy_in")] = g_modBusMeterData.fEnergyIn;
   for (int i=0; i<3; i++)
   {
     char szBuf[32];
-    sprintf(szBuf, "u_phase_%1.1d", i+1);
+    sprintf(szBuf, "u_%1.1d", i+1);
     root[szBuf] = g_modBusMeterData.fPhaseVoltage[i];
-    sprintf(szBuf, "i_phase_%1.1d", i+1);
+    sprintf(szBuf, "i_%1.1d", i+1);
     root[szBuf] = g_modBusMeterData.fPhaseCurrent[i];
+    sprintf(szBuf, "p_%1.1d", i+1);
+    root[szBuf] = g_modBusMeterData.fPhasePower[i];
+    sprintf(szBuf, "ap_%1.1d", i+1);
+    root[szBuf] = g_modBusMeterData.fApparentPower[i];
+    sprintf(szBuf, "rp_%1.1d", i+1);
+    root[szBuf] = g_modBusMeterData.fReactivePower[i];
+
   }
   root[F("cycles")] = g_modBusMeterData.iCycles;         
   root[F("ErrCnt")] = g_modBusMeterData.iErrCnt;        
@@ -178,9 +215,6 @@ void handleGetSensor(AsyncWebServerRequest *request)
   request->send(response);
 }
 
-
-
-
 /**
  * Handle Update.
  */
@@ -197,7 +231,7 @@ void handleUpdate(AsyncWebServerRequest *request)
   {
     debugD("other Button:" );
   }
-  resp += F("<h1>Updateed.</h1>");
+  resp += F("<h1>Updated.</h1>");
   resp += F("</body></html>");
   request->send(result, F(CONTENT_TYPE_HTML), resp);
 }
@@ -207,7 +241,7 @@ void handleUpdate(AsyncWebServerRequest *request)
  */
 void handleSetup(AsyncWebServerRequest *request)
 {
-    debugD("handleSetup: %s (%d args)", request->url().c_str(), request->params());
+  debugD("handleSetup: %s (%d args)", request->url().c_str(), request->params());
 
   if (request->hasParam("Update"))
     debugD("Update");
@@ -216,6 +250,47 @@ void handleSetup(AsyncWebServerRequest *request)
     debugD("other Button:" );
   }
 }
+
+/**
+ * Handle set request from http server.
+ */
+void handleSettings(AsyncWebServerRequest *request)
+{
+  debugI("%s (%d args)", request->url().c_str(), request->params());
+
+  String resp = F("<!DOCTYPE html><html><head><meta http-equiv=\"refresh\" content=\"5; url=/\"></head><body>");
+  String ssid = "";
+  String pass = "";
+  int result = 400;
+
+  if (request->hasParam("metertype", true)) 
+  {
+    g_cfg.sMeterType = request->getParam("metertype", true)->value();
+    result = 200;
+  }
+  if (result == 400) 
+  {
+    request->send(result, F(CONTENT_TYPE_PLAIN), F("Bad request\n\n"));
+    return;
+  }
+
+  if (g_cfg.Save()) 
+  {
+    resp += F("<h1>Settings saved.</h1>");
+  }
+  else 
+  {
+    resp += F("<h1>Failed to save config file.</h1>");
+    result = 400;
+  }
+  resp += F("</body></html>");
+  if (result == 200) {
+    requestRestart();
+  }
+  request->send(result, F(CONTENT_TYPE_HTML), resp);
+}
+
+
 
 const char* PARAM_MESSAGE = "message";
 
@@ -282,8 +357,11 @@ void StartHTTP(void)
 */
 
 
-  g_server.on("/html", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/index.html", "text/html");
+  g_server.on("/index.html", HTTP_GET, [](AsyncWebServerRequest *request)
+  {
+    debugD("send index.html");
+    request->send_P(200, "text/html", index_html);
+    // request->send(SPIFFS, "/index.html", "text/html");
   });
 
 
@@ -291,7 +369,7 @@ void StartHTTP(void)
   {
     debugD("on jQuery");
     request->send(SPIFFS, "/src/jquery-3.3.1.min.js", "text/javascript");
-  });
+  }).setFilter(ON_STA_FILTER);
 
 
   // GET
@@ -299,11 +377,11 @@ void StartHTTP(void)
   g_server.on("/api/meter", HTTP_GET, handleGetPowerMeter);
   g_server.on("/api/sensor", HTTP_GET, handleGetSensor);
 
-/*
+
   // POST
-  g_server.on("/update", HTTP_POST, handleUpdate );
-  g_server.on("/setup", HTTP_POST, handleSetup );
-*/
+//  g_server.on("/update", HTTP_POST, handleUpdate );
+  g_server.on("/settings", HTTP_POST, handleSettings );
+
 
   // make sure config.json is not served!
   g_server.on("/config.json", HTTP_GET, [](AsyncWebServerRequest *request) 
@@ -312,7 +390,7 @@ void StartHTTP(void)
   });
 
   // catch-all
-  g_server.serveStatic("/", SPIFFS, "/", CACHE_HEADER).setDefaultFile("index.html");
+//  g_server.serveStatic("/", SPIFFS, "/", CACHE_HEADER).setDefaultFile("index.html");
 
   g_server.begin();
   debugD("HTTP server started... ");

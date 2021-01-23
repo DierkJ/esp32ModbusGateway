@@ -8,7 +8,7 @@
 * @date:	20201129 16:01:24 
 * @version:	1.0
 *
-* @copyright:	(c)2021 Team HAHIS
+* @copyright:	(c) 2021 Team HAHIS
 *
 * MIT License
 *
@@ -34,15 +34,83 @@
 **/
 static const char TAG[] = __FILE__;
 
+
+#include <WiFi.h>
+#include "SPIFFS.h"
+#include <rom/rtc.h>
+
+#include <MD5Builder.h>
+#include <WString.h>
+#include <FS.h>
+#include <ArduinoJson.h>
+
+#include "modbus.h"
 #include "PersistentConfig.h"
 
 
 PersistentConfig::PersistentConfig()
 {
-    
+    sMeterType = "SDM630";
 }
 
 PersistentConfig::~PersistentConfig()
 {
 }
 
+/**
+ * @brief read json configuration file from SPIFFS
+ * 
+ * @return true     read successfull
+ * @return false    configuration not available
+ */
+bool PersistentConfig::Load()
+{
+    ESP_LOGI(TAG, "loading config");
+    File configFile = SPIFFS.open(F("/config.json"), "r");
+    if (!configFile) 
+    {
+        ESP_LOGE(TAG, "open config failed");
+        return false;
+    }
+
+    size_t size = configFile.size();
+ 
+    StaticJsonDocument<512> doc;
+    auto error = deserializeJson(doc, configFile);
+    if (error) 
+    {
+       ESP_LOGE(TAG, "deserializeJson() failed with  %s", error.c_str());
+        configFile.close();
+        return false;
+    }
+    configFile.close();
+
+    const char *pCC = doc["metertype"];
+    ESP_LOGI(TAG, "Config: Metertype: %s", pCC);
+    sMeterType = pCC;
+    return true;
+}
+
+/** 
+ * @brief write json configuration file
+ * 
+ * @return true     write successfull
+ * @return false    write not successfull
+ */
+bool PersistentConfig::Save()
+{
+  File configFile = SPIFFS.open(F("/config.json"), "w");
+  if (!configFile) 
+  {
+    ESP_LOGE(TAG, "save config failed");
+    return false;
+  }
+
+  StaticJsonDocument<512> doc;
+  doc["metertype"] = sMeterType;
+
+  serializeJson(doc, configFile);
+  configFile.close();
+
+  return true;
+}

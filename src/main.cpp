@@ -41,6 +41,8 @@ static const char TAG[] = __FILE__;
 #include "lorawan.h"
 #include "mbhttpserver.h"
 #include "i2c.h"
+#include "util.h"
+#include "PersistentConfig.h"
 
 
 #define NTP_SERVER "de.pool.ntp.org"
@@ -51,12 +53,21 @@ String g_devicename = "HahisMBGW01";
 String g_ipAddress ;
 String g_ipSubNet;
 String g_SSID;
+struct tm g_bootTime;
+
+PersistentConfig g_cfg;
 
 /*
 ** remote debugger 
 ** Telnet / Web / Serial
 */
 RemoteDebug Debug;
+
+
+/*
+** some helper functions
+*/
+
 
 void setup() 
 {
@@ -65,13 +76,6 @@ void setup()
   assert(I2Caccess != NULL);
   I2C_MUTEX_UNLOCK();
 
-
-  // Set WiFi to station mode and disconnect from an AP if it was previously connected
-/*
-  WiFi.mode(WIFI_STA);
-  delay(250);
-  WiFi.disconnect();
-*/
 
   Serial.begin(115200);
   esp_log_level_set("*", ESP_LOG_INFO);
@@ -98,6 +102,8 @@ void setup()
   ESP_LOGI(TAG, "Wifi/BT software coexist version %s",
              esp_coex_version_get());
 
+  ESP_LOGI(TAG, "Cause %d:   %s\n", getResetReason(0), getResetReasonStr(0));
+  ESP_LOGI(TAG, "Chip ID:    %05X\n", getChipId());
   delay(100);
 
   // open i2c bus
@@ -120,9 +126,12 @@ void setup()
      return;
   }
 
-
-
   bool res;
+  res = g_cfg.Load();
+  if (!res)
+  {
+    ESP_LOGE(TAG, "no Configuration :-(");
+  }
 
 #ifdef WIFI_MANAGER
   //WiFiManager, Local intialization. Once its business is done, there is no need to keep it around
@@ -151,15 +160,17 @@ void setup()
   {
         //if you get here you have connected to the WiFi    
         ESP_LOGI(TAG, "connected...yeey :)");
-    
+        WiFi.setAutoReconnect(true);
+        WiFi.persistent(true);      
+        
         g_ipAddress = WiFi.localIP().toString();
         g_ipSubNet = WiFi.subnetMask().toString();
         g_SSID = WiFi.SSID();
 
         struct tm local;
         configTzTime(TZ_INFO, NTP_SERVER); // ESP32 Systemzeit mit NTP Synchronisieren
-        getLocalTime(&local, 10000); 
-        ESP_LOGI(TAG, "Time: %2.2d:%2.2d:%2.2d", local.tm_hour, local.tm_min, local.tm_sec);
+        getLocalTime(&g_bootTime, 10000); 
+        ESP_LOGI(TAG, "Time: %2.2d:%2.2d:%2.2d", g_bootTime.tm_hour, g_bootTime.tm_min, g_bootTime.tm_sec);
 
         //
         // start the remote debugger
@@ -167,10 +178,12 @@ void setup()
 	      Debug.begin(g_devicename); // Initialize the WiFi server
         Debug.setResetCmdEnabled(true); // Enable the reset command
 	      Debug.showProfiler(true); // Profiler (Good to measure times, to optimize codes)
-	      // Debug.showColors(true); // Colors
+	      Debug.showColors(false); // Colors
+        
+        // set to false later
         Debug.setSerialEnabled(true);
 
-        StartModBus();
+        StartModBus(MT_SDM230);
         StartHTTP();
         otaInit();
         StartSensors();
@@ -185,6 +198,7 @@ uint32_t _freeHeap = 0;
 
 static long _tsMillis = 0;
 static long _loopMillis = 0;
+static int iWifiRetries = 0;
 
 void loop() 
 {
@@ -195,10 +209,11 @@ void loop()
   loraHandle();
   Debug.handle();
  
-
-  if ((millis() - _tsMillis) > 2000L)
+  // 
+  // check every 5 sec for heap size and WIFI connection
+  //
+  if ((millis() - _tsMillis) > 5000L)
   {
-
     if (g_minFreeHeap != _minFreeHeap || ESP.getFreeHeap() != _freeHeap) 
     {
       _freeHeap = ESP.getFreeHeap();
@@ -207,6 +222,22 @@ void loop()
       _minFreeHeap = g_minFreeHeap;
 
     }
+    // Check for connection lost...
+    if (WiFi.status() != WL_CONNECTED) 
+    {
+      ESP_LOGE(TAG, "wifi connection lost");
+      WiFi.reconnect();
+      iWifiRetries++;
+
+      if (iWifiRetries > 5)      
+      {
+        ESP_LOGE(TAG, "could not reconnect wifi - restarting??");
+        delay(100);
+        ESP.restart();
+      }
+    }
+    else
+      iWifiRetries = 0;
 
     _tsMillis = millis();
   }

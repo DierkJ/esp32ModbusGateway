@@ -45,9 +45,10 @@ class PersistentConfig {
         PersistentConfig();
         ~PersistentConfig();
 
-    // Class members;
+        bool Load();
+        bool Save();
 
-
+        String sMeterType;
 
 };
 

@@ -73,9 +73,12 @@ void otaDisplayProgress(unsigned int progress, unsigned int total)
 
     if (uProg100 < 2)
       dp_printf(0, 6, FONT_SMALL, 0, "          ");
-    if ((uProg100 % 10) == 0)
+    if ((uProg100 % 5) == 0)
+    {
+      dp_printf(MY_DISPLAY_WIDTH/2 - 10, 4, FONT_SMALL, 0, "    ");
+      dp_printf(MY_DISPLAY_WIDTH/2 - 10, 4, FONT_SMALL, 0, "%d %%", uProg100 );
       dp_progressbar(5, MY_DISPLAY_HEIGHT-20, MY_DISPLAY_WIDTH-10, 18, uProg100);
-    
+    }
     dp_dump(displaybuf);
 }
 

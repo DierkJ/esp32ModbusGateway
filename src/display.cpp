@@ -178,10 +178,10 @@ void dp_drawPage(dp_page_t dp)
         dp_printf(0, 0, FONT_NORMAL, 0, "Power Meter" );
         if (g_modBusMeterData.fConnected)
         {
-          dp_printf(0, 3, FONT_SMALL, 0, "Power:   %.3f kW", g_modBusMeterData.fPower);
+          dp_printf(0, 3, FONT_SMALL, 0, "Power:   %.0f W", g_modBusMeterData.fPhasePower[0]);
           dp_printf(0, 4, FONT_SMALL, 0, "In:      %.1f kWh", g_modBusMeterData.fEnergyIn );
           dp_printf(0, 5, FONT_SMALL, 0, "Out:     %.1f kWh", g_modBusMeterData.fEnergyOut );
-          dp_printf(0, 6, FONT_SMALL, 0, "Line:    %.1f V", g_modBusMeterData.fVoltage );
+          dp_printf(0, 6, FONT_SMALL, 0, "Line:    %.1f V", g_modBusMeterData.fPhaseVoltage[0] );
         }
         else
           dp_printf(0, 4, FONT_SMALL, 0, "not connected" );
@@ -204,9 +204,9 @@ void dp_drawPage(dp_page_t dp)
 
       case DP_PAGE_INTERNAL:
         dp_printf(0, 0, FONT_NORMAL, 0, "Internal" );
-        dp_printf(0, 3, FONT_SMALL, 0, "Uptime:    %d", millis());
+        dp_printf(0, 3, FONT_SMALL, 0, "Up: %s", getUptimeString().c_str());
         dp_printf(0, 4, FONT_SMALL, 0, "free Heap: %d", g_minFreeHeap);
-        dp_printf(0, 5, FONT_SMALL, 0, "Version:   V%s", PROGVERSION);
+        dp_printf(0, 5, FONT_SMALL, 0, "Version: V%s", PROGVERSION);
         //dp_printf(0, 6, FONT_SMALL, 0, "Last Acc:  %d", g_lastAccessTime);
         break;
     }

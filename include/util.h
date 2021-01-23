@@ -37,8 +37,10 @@
 
 extern uint32_t g_minFreeHeap;
 
-long getChipId();
-String getUptimeString();
+extern long getChipId();
+extern String getUptimeString();
 
+extern int getResetReason(int core);
+extern const char* getResetReasonStr(int core);
 
 #endif

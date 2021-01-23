@@ -46,13 +46,14 @@
 // #define CAPTIVE_PORTAL
 // #define SPIFFS_EDITOR
 #define HAS_LORA
+
 // #define WIFI_MANAGER
+#define WIFI_CONNECT_TIMEOUT  (15*10)    // 15 sec to connect
 
 // Remote debugging / logging
 #define WEBSOCKET_DISABLED      // only TELNET
-#include "RemoteDebug.h"        //https://github.com/JoaoLopesF/RemoteDebug
+#include "RemoteDebug.h"        //
 extern RemoteDebug Debug;
-
 
 
 #define PANIC(...) abort()
@@ -101,6 +102,11 @@ extern String g_SSID ;
 #include "ota.h"
 #include "lorawan.h"
 #include "sensors.h"
+#include "PersistentConfig.h"
+
+extern PersistentConfig g_cfg;
+
+
 
 #endif
 
