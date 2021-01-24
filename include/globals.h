@@ -38,8 +38,7 @@
 // The mother of all embedded development...
 #include <Arduino.h>
 #include "ttgov1.h"   // our board
-
-#define COMPDATE __DATE__ __TIME__
+#include "version.h"  // auto generated version file
 
 // config defines
 #define OTA_SERVER

@@ -112,7 +112,7 @@ void dp_init(bool verbose)
       esp_chip_info_t chip_info;
       esp_chip_info(&chip_info);
       dp_printf(0, 0, 0, 0, "** ModBus Gateway **");
-      dp_printf(0, 1, 0, 0, "Software v%s", PROGVERSION);
+      dp_printf(0, 1, 0, 0, "Software v%s", VERSION);
       dp_printf(0, 3, 0, 0, "ESP32 %d cores", chip_info.cores);
       dp_printf(0, 4, 0, 0, "Chip Rev.%d", chip_info.revision);
       dp_printf(0, 5, 0, 0, "WiFi%s%s",
@@ -206,7 +206,7 @@ void dp_drawPage(dp_page_t dp)
         dp_printf(0, 0, FONT_NORMAL, 0, "Internal" );
         dp_printf(0, 3, FONT_SMALL, 0, "Up: %s", getUptimeString().c_str());
         dp_printf(0, 4, FONT_SMALL, 0, "free Heap: %d", g_minFreeHeap);
-        dp_printf(0, 5, FONT_SMALL, 0, "Version: V%s", PROGVERSION);
+        dp_printf(0, 5, FONT_SMALL, 0, "Version: V%s", VERSION);
         //dp_printf(0, 6, FONT_SMALL, 0, "Last Acc:  %d", g_lastAccessTime);
         break;
     }

@@ -1,11 +1,32 @@
 # esp32ModbusGateway
  ModBus Gateway with Wifi and LORA Support
 
-# Use case
+## Use case
 
-Intention of this project is to connect "old" ModBus power meters to "usable" modern interfaces.
+Intention of this project is to connect ModBus power meters to "usable" modern interfaces.
 - Rest API / JSON
 - Lora Client (The Things Network)
+
+## Hardware
+
+**Supported ESP32 based boards**:
+
+*LoRa & SPI*:
+- TTGO: T1*, T2*, T3*, T-Beam, T-Fox
+
+**Supported / Tested ModBus meters**:
+- SDM630
+- SDM230
+- FINDER
+
+## TODO
+
+- HTTP Server Code not finish.  jQuery from SPIFF
+- Deap Sleep options for shut down during night time
+- store settings in SPIFFS
+- finish Lora tx
+- draw schematic
+  
 
 ## JSON API description
 
@@ -16,22 +37,27 @@ The ModBusGateway uses a json API to communicate with a backend.
   - `/api/meter` power meter data (`GET`)
     ```
     {
-        "connected":true,
-        "voltage":75.65258,
-        "current":0,
-        "power":0,
-        "reactive_power":0,
-        "frequency":49.89715,
-        "energyout":0.02,
-        "energyin":0,
-        "u_phase_1":226.9928,
-        "i_phase_1":0,
-        "u_phase_2":0,
-        "i_phase_2":0,
-        "u_phase_3":0,
-        "i_phase_3":0,
-        "cycles":186,
-        "ErrCnt":0
+      "connected":true,       // modbus connected
+      "frequency":49.95122,   // line frequency in Hz
+      "energy_out":0.01,      // exported Energy in kWh
+      "energy_in":10.007,     // imported Engery in kWh
+      "u_1":223.8788,         // phase1: voltage in V
+      "i_1":0.56999,          // phase1: current in A
+      "p_1":90.2756,          // phase1: power in W
+      "ap_1":116.3189,        // phase1: apparent power in VA
+      "rp_1":73.34446,        // phase1: reactive power in VAr
+      "u_2":0,                // phase2: voltage in V               
+      "i_2":0,                // phase2: current in A
+      "p_2":0,                // phase2: power in W
+      "ap_2":0,               // phase2: apparent power in VA
+      "rp_2":0,               // phase2: reactive power in VAr
+      "u_3":0,                // phase3: voltage in V
+      "i_3":0,                // phase3: current in A
+      "p_3":0,                // phase3: power in W
+      "ap_3":0,               // phase3: apparent power in VA
+      "rp_3":0,               // phase3: reactive power in VAr
+      "cycles":10524,         // number of Modbus cycles
+      "ErrCnt":0              // Modbus Error count
     }
     ```
 
@@ -99,16 +125,9 @@ Note: all settings are stored in NVRAM and will be reloaded when device starts.
 Test with TTGO Lora and SDM 610
 <img src="Img/ModBusGatewayProto2.jpg">
 
-Modbus Reply:
-<img src="Img/SMD630ModBus.jpg">
+In Action with SDM230:
+<img src="Img/MBGatewayInAction.jpg">
 
-
-# Hardware
-
-**Supported ESP32 based boards**:
-
-*LoRa & SPI*:
-- TTGO: T1*, T2*, T3*, T-Beam, T-Fox
 
 
 

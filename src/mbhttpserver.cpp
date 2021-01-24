@@ -130,7 +130,7 @@ void handleGetStatus(AsyncWebServerRequest *request)
     snprintf(buf, 16, "%06x", getChipId());
     root[F("cpu")] = "ESP32";
     root[F("serial")] = buf;
-    snprintf(buf, 16, "%s", PROGVERSION);
+    snprintf(buf, 16, "%s", VERSION);
     root[F("build")] = buf; 
     // root[F("ssid")] = g_ssid;
     // root[F("pass")] = g_pass;
