@@ -25,8 +25,6 @@ Intention of this project is to connect ModBus power meters to "usable" modern i
 - Deap Sleep options for shut down during night time
 - store settings in SPIFFS
 - finish Lora tx
-- draw schematic
-  
 
 ## JSON API description
 
@@ -119,6 +117,9 @@ The device listenes for remote control commands on LoRaWAN Port 2. Multiple comm
 Note: all settings are stored in NVRAM and will be reloaded when device starts.
 (TODO)
 	
+# Schematic:
+
+<img src="Img/ModBusGateway_Schematic.png">
 
 # Prototype:
 

@@ -13,3 +13,4 @@
 .version_no_increment
 src/loraconf.h
 src/ota.conf
+img/*.pdf

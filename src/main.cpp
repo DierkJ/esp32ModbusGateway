@@ -105,7 +105,7 @@ void setup()
 
   ESP_LOGI(TAG, "Cause %d:   %s\n", getResetReason(0), getResetReasonStr(0));
   ESP_LOGI(TAG, "Chip ID:    %05X\n", getChipId());
-  ESP_LOGI(TAG, "Version v%s, built %s\n",VERSION, BUILD_TIMESTAMP);
+  ESP_LOGI(TAG, "Version v%s, built %s\n", VERSION, BUILD_TIMESTAMP);
   delay(100);
 
   // open i2c bus

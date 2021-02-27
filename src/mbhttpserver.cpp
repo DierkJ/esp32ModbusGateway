@@ -185,8 +185,8 @@ void handleGetPowerMeter(AsyncWebServerRequest *request)
     root[szBuf] = g_modBusMeterData.fReactivePower[i];
 
   }
-  root[F("cycles")] = g_modBusMeterData.iCycles;         
-  root[F("ErrCnt")] = g_modBusMeterData.iErrCnt;        
+  root[F("cycles")] = (unsigned long)g_modBusMeterData.iCycles;         
+  root[F("ErrCnt")] = (unsigned long)g_modBusMeterData.iErrCnt;        
 
   g_lastAccessTime = millis();
 
