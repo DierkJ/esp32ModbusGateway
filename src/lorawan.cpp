@@ -161,14 +161,21 @@ void do_send(osjob_t* j)
         //
         // simple data for port #1 first...
         // later: TX queue
-        *(float *) &bTxBuffer[0] = g_modBusMeterData.fEnergyIn;
-        *(float *) &bTxBuffer[4] = g_modBusMeterData.fEnergyOut;
-        *(float *) &bTxBuffer[8] = g_modBusMeterData.fPhasePower[0];
 
-        // Prepare upstream data transmission at the next possible time.
-        LMIC_setTxData2(1, bTxBuffer, 3*sizeof(float), 0);
-        g_LoraData.nTX++;
-        debugD( "Packet queued");
+        ModBusMeter *pM = GetMeterDataPtr(0);
+        if (pM)
+        {
+          *(float *) &bTxBuffer[0] = pM->GetEnergyIn();
+          *(float *) &bTxBuffer[4] = pM->GetEnergyOut();
+          *(float *) &bTxBuffer[8] = pM->GetPhasePower(0);
+        
+          // Prepare upstream data transmission at the next possible time.
+          LMIC_setTxData2(1, bTxBuffer, 3*sizeof(float), 0);
+          g_LoraData.nTX++;
+          debugD( "Packet queued");
+        }
+        else
+          debugD( "Packet not queued, because no Meter");
     }
     // Next TX is scheduled after TX_COMPLETE event.
 }

@@ -15,6 +15,8 @@ Intention of this project is to connect ModBus power meters to "usable" modern i
 - TTGO: T1*, T2*, T3*, T-Beam, T-Fox
 
 **Supported / Tested ModBus meters**:
+
+max. 4 devices on one ModBus
 - SDM630
 - SDM230
 - FINDER
@@ -58,6 +60,9 @@ The ModBusGateway uses a json API to communicate with a backend.
       "ErrCnt":0              // Modbus Error count
     }
     ```
+  with parameter
+  - `/api/meter?[0,1,2,3]` power meter data of meter 0,1,2,3 (`GET`)
+
 
   - `/api/status` system health (`GET`)
   - `/api/wlan` set WiFi configuration (`GET`)

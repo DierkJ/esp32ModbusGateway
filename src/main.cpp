@@ -184,8 +184,11 @@ void setup()
         
         // set to false later
         Debug.setSerialEnabled(true);
-
-        StartModBus(MT_SDM230);
+        
+        enum eMeterType meters[] = { MT_SDM230, MT_SDM630, MT_UNKNOWN, MT_UNKNOWN } ;
+        uint16_t devadr[] = {1, 2, 0, 0}; 
+        StartModBus (9600, 2,  meters, devadr);
+        
         StartHTTP();
         otaInit();
         StartSensors();

@@ -165,29 +165,45 @@ void handleGetPowerMeter(AsyncWebServerRequest *request)
   response->addHeader("Server","Modbus Gateway");
   JsonObject root = response->getRoot();
 
-  root[F("connected")] = g_modBusMeterData.fConnected;
+  int iMIdx = 0;
+  if (request->hasParam("1"))
+    iMIdx = 1;
+  if (request->hasParam("2"))
+    iMIdx = 1;
+  if (request->hasParam("3"))
+    iMIdx = 1;
 
-  root[F("frequency")] = g_modBusMeterData.fFrequency;
-  root[F("energy_out")] = g_modBusMeterData.fEnergyOut;
-  root[F("energy_in")] = g_modBusMeterData.fEnergyIn;
-  for (int i=0; i<3; i++)
+  ModBusMeter *pM = GetMeterDataPtr(iMIdx);
+  if (pM)
   {
-    char szBuf[32];
-    sprintf(szBuf, "u_%1.1d", i+1);
-    root[szBuf] = g_modBusMeterData.fPhaseVoltage[i];
-    sprintf(szBuf, "i_%1.1d", i+1);
-    root[szBuf] = g_modBusMeterData.fPhaseCurrent[i];
-    sprintf(szBuf, "p_%1.1d", i+1);
-    root[szBuf] = g_modBusMeterData.fPhasePower[i];
-    sprintf(szBuf, "ap_%1.1d", i+1);
-    root[szBuf] = g_modBusMeterData.fApparentPower[i];
-    sprintf(szBuf, "rp_%1.1d", i+1);
-    root[szBuf] = g_modBusMeterData.fReactivePower[i];
+    root[F("connected")] = pM->isConnected();
 
+    root[F("frequency")] = pM->GetFrequency();
+    root[F("energy_out")] = pM->GetEnergyOut();
+    root[F("energy_in")] = pM->GetEnergyIn();
+    for (int i=0; i<3; i++)
+    {
+      char szBuf[32];
+      sprintf(szBuf, "u_%1.1d", i+1);
+      root[szBuf] = pM->GetPhaseVoltage(i);
+      sprintf(szBuf, "i_%1.1d", i+1);
+      root[szBuf] = pM->GetPhaseCurrent(i);
+      sprintf(szBuf, "p_%1.1d", i+1);
+      root[szBuf] = pM->GetPhasePower(i);
+      sprintf(szBuf, "ap_%1.1d", i+1);
+      root[szBuf] = pM->GetApparentPower(i);
+      sprintf(szBuf, "rp_%1.1d", i+1);
+      root[szBuf] = pM->GetReactivePower(i);
+    }
+    root[F("cycles")] = (unsigned long)pM->GetCycles();         
+    root[F("ErrCnt")] = (unsigned long)pM->GetErrCnt();        
+    root[F("DeviceAddr")] = (unsigned long)pM->GetDeviceAddr();   
+    root[F("DeviceType")] = pM->GetDeviceType();   
   }
-  root[F("cycles")] = (unsigned long)g_modBusMeterData.iCycles;         
-  root[F("ErrCnt")] = (unsigned long)g_modBusMeterData.iErrCnt;        
-
+  else
+  {
+    root[F("connected")] = false;
+  }
   g_lastAccessTime = millis();
 
   response->setLength();

@@ -57,13 +57,11 @@ SSOLED ssoled;
  * 
  * the Display has following pages:
  * 1: (Home) Logo / IP Adress
- * 2: Meter Data
- * 3: Sensor Data
- * 4: TTN Data
- * 5: internal data
+ * 2+n: Meter Data (n: 0,1,2,3: one per Meter) 
+ * 3+n: Sensor Data
+ * 4+n: TTN Data
+ * 5+n: internal data
  */  
-
-
 static dp_page_t curDisplayPage;
 
 /**
@@ -136,7 +134,7 @@ void dp_init(bool verbose)
     dp_power(DisplayIsOn); // set display off if disabled
 
     I2C_MUTEX_UNLOCK(); // release i2c bus access mutex
-  }     
+  }    
   curDisplayPage = DP_PAGE_HOME;                
 } 
 
@@ -171,22 +169,40 @@ void dp_drawPage(dp_page_t dp)
         dp_printf(0, 4, FONT_SMALL, 0, "Mask: %s", g_ipSubNet.c_str() );
         dp_printf(0, 5, FONT_SMALL, 0, "SSID: %s", g_SSID );
         dp_printf(0, 6, FONT_SMALL, 0, "DNS:  %s", g_devicename.c_str() );
-
         break;
 
-      case DP_PAGE_METER:
-        dp_printf(0, 0, FONT_NORMAL, 0, "Power Meter" );
-        if (g_modBusMeterData.fConnected)
+      case DP_PAGE_METER_0:
+      case DP_PAGE_METER_1:
+      case DP_PAGE_METER_2:
+      case DP_PAGE_METER_3:
+      {
+        int iNM = GetNumberOfMeters();
+        if (iNM > (dp-DP_PAGE_METER_0))
         {
-          dp_printf(0, 3, FONT_SMALL, 0, "Power:   %.0f W", g_modBusMeterData.fPhasePower[0]);
-          dp_printf(0, 4, FONT_SMALL, 0, "In:      %.1f kWh", g_modBusMeterData.fEnergyIn );
-          dp_printf(0, 5, FONT_SMALL, 0, "Out:     %.1f kWh", g_modBusMeterData.fEnergyOut );
-          dp_printf(0, 6, FONT_SMALL, 0, "Line:    %.1f V", g_modBusMeterData.fPhaseVoltage[0] );
+          ModBusMeter *pM = GetMeterDataPtr(dp-DP_PAGE_METER_0);
+          if (pM)
+          {
+            dp_printf(0, 0, FONT_NORMAL, 0, "%1.1d.Meter: %s", dp-DP_PAGE_METER_0+1, pM->GetDeviceType().c_str() );
+            if (pM->isConnected())
+            {
+              dp_printf(0, 3, FONT_SMALL, 0, "Power:   %.0f W", pM->GetPhasePower(0));
+              dp_printf(0, 4, FONT_SMALL, 0, "In:      %.1f kWh", pM->GetEnergyIn() );
+              dp_printf(0, 5, FONT_SMALL, 0, "Out:     %.1f kWh", pM->GetEnergyOut() );
+              dp_printf(0, 6, FONT_SMALL, 0, "Line:    %.1f V", pM->GetPhaseVoltage(0) );
+            }
+            else
+              dp_printf(0, 4, FONT_SMALL, 0, "not connected" );
+          }
         }
         else
-          dp_printf(0, 4, FONT_SMALL, 0, "not connected" );
+        {
+          //
+          // skip to sensor page, if no more meters to display
+          //
+          curDisplayPage = (dp_page_t)(DP_PAGE_SENSOR-1);
+        }
         break;
-
+      }
       case DP_PAGE_SENSOR:
         dp_printf(0, 0, FONT_NORMAL, 0, "Environment" );
         dp_printf(0, 3, FONT_SMALL, 0, "Temp:     %.1f C", g_SensorData.temperature);

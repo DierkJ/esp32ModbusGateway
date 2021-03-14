@@ -121,10 +121,13 @@
 enum dp_page_t 
 {
     DP_PAGE_HOME = 0,
-    DP_PAGE_METER = 1,
-    DP_PAGE_SENSOR = 2, 
-    DP_PAGE_TTN = 3,
-    DP_PAGE_INTERNAL = 4,
+    DP_PAGE_METER_0 = 1,
+    DP_PAGE_METER_1 = 2,
+    DP_PAGE_METER_2 = 3,
+    DP_PAGE_METER_3 = 4,
+    DP_PAGE_SENSOR = 5, 
+    DP_PAGE_TTN = 6,
+    DP_PAGE_INTERNAL = 7,
     DP_PAGE_LAST = DP_PAGE_INTERNAL
 } ;
 
