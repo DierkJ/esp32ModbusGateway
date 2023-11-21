@@ -145,7 +145,7 @@ void setup()
 #else
 
     WiFi.mode(WIFI_STA);
-    WiFi.begin("$%XY", "lamsenjoch27");
+    WiFi.begin("???", "???"); // hard coded, not good style
     if (WiFi.waitForConnectResult() != WL_CONNECTED) 
       res = false;
     else
